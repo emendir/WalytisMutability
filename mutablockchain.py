@@ -86,18 +86,19 @@ class MutaBlockchain():
 
         content_type = block_content['type']
         timestamp = block.creation_time
-        content = block_content['content']
 
         if content_type == mutablock.ORIGINAL_BLOCK:
             parent_id = ""
             original_id = bytes_to_string(block.short_id)
+            content = block_content['content']
         elif content_type == mutablock.UPDATE_BLOCK:
             parent_id = block_content['parent_block']
             original_id = blockstore.verify_original(parent_id).id
+            content = block_content['content']
         elif content_type == mutablock.DELETION_BLOCK:
             parent_id = block_content['parent_block']
             original_id = blockstore.verify_original(parent_id).id
-
+            content = ""
         blockstore.add_content_version(mutablock.ContentVersion(
             type=content_type,
             id=id,

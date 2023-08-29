@@ -1,73 +1,145 @@
-from datastore_file_io import delete_content_version_by_id, store_content_version, retrieve_content_version_by_id, retrieve_content_version_originals, retrieve_mutablock_content_versions
+import sqlite3
+import mutablock
+import json
+from datetime import datetime
 import mutablock
 
-
-def add_mutablock(block_id, content):
-    content_version = mutablock.ContentVersion(
-        type=mutablock.ORIGINAL_BLOCK,
-        id=block_id,
-        parent_id="",
-        original_id=block_id,
-        content=content
-    )
-
-    add_content_version(content_version)
-
-    return block_id
+DB_PATH = "content_versions.db"
+TIME_FORMAT = '%Y.%m.%d_%H.%M.%S.%f'
 
 
-def update_mutablock(block_id, parent_id: str, content):
-    original_version = verify_original(parent_id)
-
-    content_version = mutablock.ContentVersion(
-        type=mutablock.UPDATE_BLOCK,
-        id=block_id,
-        parent_id=parent_id,
-        original_id=original_version.id,
-        content=content
-    )
-
-    add_content_version(content_version)
-
-    return original_version
+def time_to_string(time: datetime):
+    return time.strftime(TIME_FORMAT)
 
 
-def delete_mutablock(block_id, parent_id):
-    original_version = verify_original(parent_id)
-
-    content_version = mutablock.ContentVersion(
-        type=mutablock.DELETION_BLOCK,
-        id=block_id,
-        parent_id=parent_id,
-        original_id=original_version.id,
-        content=None
-    )
-
-    add_content_version(content_version)
-
-    return original_version
+def string_to_time(string):
+    return datetime.strptime(string, TIME_FORMAT)
 
 
-def get_mutablocks():
-    """Returns IDs of Mutablocks"""
-    return retrieve_content_version_originals()
+def create_if_not_exists():
+    # Connect to the SQLite database
+    connection = sqlite3.connect(DB_PATH)
+    cursor = connection.cursor()
+
+    # Create a table to store mutablock.MutaBlock.ContentVersions
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS content_versions (
+            id TEXT PRIMARY KEY,
+            type TEXT NOT NULL,
+            parent_id TEXT NOT NULL,
+            original_id TEXT NOT NULL,
+            content TEXT NOT NULL,
+            timestamp TEXT NOT NULL
+        )
+    ''')
+    connection.commit()
+
+    # Close the connection
+    connection.close()
 
 
 def add_content_version(content_version):
+    """Store ContentVersions in the database"""
     print("Storing", content_version.type)
     if content_version.type != mutablock.ORIGINAL_BLOCK:
         original_version = verify_original(content_version.parent_id)
         if original_version.id != content_version.original_id:
             raise CorruptContentAncestryError()
-    return store_content_version(content_version)
+
+    connection = sqlite3.connect(DB_PATH)
+    cursor = connection.cursor()
+    cursor.execute("INSERT INTO content_versions (type, id, parent_id, original_id, content, timestamp) VALUES (?, ?, ?, ?, ?, ?)",
+                   (content_version.type, content_version.id, content_version.parent_id, content_version.original_id,
+                    json.dumps(content_version.content), time_to_string(content_version.timestamp)))
+    connection.commit()
+    connection.close()
+
+# Retrieve MutaBlock.ContentVersions from the database
 
 
-def get_content_version(id: str):
-    return retrieve_content_version_by_id(id)
+def retrieve_content_versions():
+    connection = sqlite3.connect(DB_PATH)
+    cursor = connection.cursor()
+
+    cursor.execute(
+        "SELECT type, id, parent_id, original_id, content, timestamp FROM content_versions")
+    rows = cursor.fetchall()
+    content_versions = []
+    for row in rows:
+        content_version = mutablock.ContentVersion(
+            type=row[0], id=row[1], parent_id=row[2], original_id=row[3], content=json.loads(row[4]), timestamp=string_to_time(row[5]))
+        content_versions.append(content_version)
+    connection.close()
+    return content_versions
+
+# Retrieve a mutablock.ContentVersion from the database by id
 
 
-def get_mutablock_content_versions(id: str):
-    return retrieve_mutablock_content_versions(id)
+def get_content_version(content_version_id: str):
+    connection = sqlite3.connect(DB_PATH)
+    cursor = connection.cursor()
+    cursor.execute(
+        "SELECT type, parent_id, original_id, content, timestamp FROM content_versions WHERE id = ?", (content_version_id,))
+    row = cursor.fetchone()
+    connection.close()
+
+    if row:
+        return mutablock.ContentVersion(type=row[0], id=content_version_id, parent_id=row[1], original_id=row[2], content=json.loads(row[3]), timestamp=string_to_time(row[4]))
+    else:
+        return None
+
+
+def get_mutablock_content_versions(mutablock_id: str):
+    connection = sqlite3.connect(DB_PATH)
+    cursor = connection.cursor()
+    cursor.execute(
+        '''SELECT type, id, parent_id, original_id, content, timestamp
+        FROM content_versions
+        WHERE original_id = ?
+        ORDER BY timestamp
+        ''', (mutablock_id,))
+    rows = cursor.fetchall()
+    connection.close()
+
+    content_versions = []
+    for row in rows:
+        content_version = mutablock.ContentVersion(
+            type=row[0],
+            id=row[1],
+            parent_id=row[2],
+            original_id=row[3],
+            content=json.loads(row[4]),
+            timestamp=string_to_time(row[5])
+        )
+        content_versions.append(content_version)
+    return content_versions
+
+
+def get_mutablocks():
+    """Returns IDs of MutaBlocks"""
+    connection = sqlite3.connect(DB_PATH)
+    cursor = connection.cursor()
+
+    cursor.execute(
+        f'''SELECT id
+        FROM content_versions
+        WHERE type = ?
+        ''', (mutablock.ORIGINAL_BLOCK,))
+    rows = cursor.fetchall()
+    content_versions = []
+    connection.close()
+    return [row[0] for row in rows]
+
+# Delete a mutablock.MutaBlock.ContentVersion from the database based on its id
+
+
+def delete_content_version_by_id(content_version_id):
+    connection = sqlite3.connect(DB_PATH)
+    cursor = connection.cursor()
+    cursor.execute("DELETE FROM content_versions WHERE id = ?",
+                   (content_version_id,))
+    connection.commit()
+    connection.close()
 
 
 def verify_original(contentv_id):
@@ -89,3 +161,26 @@ def verify_original(contentv_id):
 class CorruptContentAncestryError(Exception):
     def __str__(self):
         return "CORRUPT DATA: false original ID found"
+
+
+def demo():
+    # Example usage
+    cv1 = mutablock.ContentVersion("ORIGINAL_BLOCK", "1", "",
+                                   "original1", {"data": "Example 1"})
+    cv2 = mutablock.ContentVersion("UPDATE_BLOCK", "2", "1",
+                                   "original2", {"data": "Example 2"})
+
+    add_content_version(cv1)
+    add_content_version(cv2)
+
+    retrieved_content_versions = retrieve_content_versions()
+    for cv in retrieved_content_versions:
+        print(cv)
+
+    delete_content_version_by_id("1")
+    delete_content_version_by_id("2")
+
+
+create_if_not_exists()
+if __name__ == "__main__":
+    demo()
