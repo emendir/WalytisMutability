@@ -1,11 +1,13 @@
 import walytis_api
+import os
 import json
 import mutablock
-import blockstore
+from blockstore import BlockStore
 from brenthy_tools.utils import bytes_to_string, string_to_bytes
+import appdirs
 
 
-class MutaBlockchain():
+class MutaBlockchain(BlockStore):
     def __init__(self,
                  base_blockchain_type,
                  blockchain_id: str,
@@ -15,6 +17,13 @@ class MutaBlockchain():
                  forget_appdata=False,
                  sequential_callbacks=True
                  ):
+        self.db_path = os.path.join(
+            appdirs.user_data_dir(),
+            "MutaBlockchains",
+            blockchain_id
+        )
+        self.create_block_database()
+
         self.block_received_callback = block_received_callback
         self.base_blockchain: walytis_api.Blockchain = base_blockchain_type(
             blockchain_id=blockchain_id,
@@ -24,6 +33,7 @@ class MutaBlockchain():
             forget_appdata=forget_appdata,
             sequential_callbacks=sequential_callbacks
         )
+        self.id = self.base_blockchain.id
 
     def create(base_blockchain_type, blockchain_name: str = "", app_name: str = "", block_received_callback=None):    # pylint: disable=no-self-argument
         blockchain = base_blockchain_type.create(blockchain_name)
@@ -74,7 +84,7 @@ class MutaBlockchain():
         self._on_block_received(block)
 
     def get_mutablock_ids(self):
-        return blockstore.get_mutablocks()
+        return self.get_mutablocks()
 
     def get_mutablock(self, id):
         return mutablock.MutaBlock(id, self)
@@ -93,13 +103,13 @@ class MutaBlockchain():
             content = block_content['content']
         elif content_type == mutablock.UPDATE_BLOCK:
             parent_id = block_content['parent_block']
-            original_id = blockstore.verify_original(parent_id).id
+            original_id = self.verify_original(parent_id).id
             content = block_content['content']
         elif content_type == mutablock.DELETION_BLOCK:
             parent_id = block_content['parent_block']
-            original_id = blockstore.verify_original(parent_id).id
+            original_id = self.verify_original(parent_id).id
             content = ""
-        blockstore.add_content_version(mutablock.ContentVersion(
+        self.add_content_version(mutablock.ContentVersion(
             type=content_type,
             id=id,
             parent_id=parent_id,

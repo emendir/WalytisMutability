@@ -28,10 +28,10 @@ def test_create_mutablockchain():
 
 def test_create_mutablock():
     global block
+    global blockchain
     print("Loading MutaBlockchain...")
-    # breakpoint()
 
-    blockchain = MutaBlockchain(walytis_api.Blockchain, blockchain_id="MutablocksTest",
+    blockchain = MutaBlockchain(walytis_api.Blockchain, blockchain_id=blockchain.id,
                                 app_name="tmp", block_received_callback=_on_block_received)
     content = {"message": "hello there", "author": "me"}
     print("Creating mutablock...")

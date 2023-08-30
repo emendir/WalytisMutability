@@ -4,7 +4,6 @@ import walytis_api
 import json
 from brenthy_tools.utils import bytes_to_string, string_to_bytes
 import mutablockchain
-import blockstore
 
 ORIGINAL_BLOCK = "original"
 UPDATE_BLOCK = "update"
@@ -22,7 +21,7 @@ class MutaBlock:
         self.mutablockchain = mutablockchain
 
     def current_content(self):
-        content_versions = blockstore.get_mutablock_content_versions(self.id)
+        content_versions = self.mutablockchain.get_mutablock_content_versions(self.id)
         # content_versions are sorted by timestamp,
         # so this way we get the latest one
         latest_content_version = content_versions[-1]
