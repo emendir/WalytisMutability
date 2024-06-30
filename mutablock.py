@@ -1,9 +1,9 @@
-from datetime import datetime
 from dataclasses import dataclass
-import walytis_beta_api
-import json
-from brenthy_tools_beta.utils import bytes_to_string, string_to_bytes
-import mutablockchain
+from datetime import datetime
+
+from brenthy_tools_beta.utils import bytes_to_string
+
+import mutablockchain as _mutablockchain
 
 ORIGINAL_BLOCK = "original"
 UPDATE_BLOCK = "update"
@@ -13,16 +13,18 @@ DELETION_BLOCK = "deletion"
 class MutaBlock:
     latest_content_version_id: str
 
-    def __init__(self, id: str, mutablockchain):
-        if isinstance(id, bytes) or isinstance(id, bytearray):
+    def __init__(self, id: str, mutablockchain: _mutablockchain.Blockchain):
+        if isinstance(id, (bytes, bytearray)):
             id = bytes_to_string(id)
 
         self.id = id
-        self.mutablockchain = mutablockchain
+        self.mutablockchain: _mutablockchain.Blockchain = mutablockchain
 
-    def current_content(self):
-        content_versions = self.mutablockchain.get_mutablock_content_versions(
-            self.id)
+    def current_content(self) -> dict:
+        """Get the compilation of the multiple ContentVersion's content."""
+        content_versions: list[ContentVersion] = self.mutablockchain.get_mutablock_content_versions(
+            self.id
+        )
         # content_versions are sorted by timestamp,
         # so this way we get the latest one
         latest_content_version = content_versions[-1]
@@ -32,7 +34,7 @@ class MutaBlock:
 
         content_history = [latest_content_version.content]
         _version = latest_content_version
-        while _version.type != ORIGINAL_BLOCK and _version.type != DELETION_BLOCK:
+        while _version.type not in {ORIGINAL_BLOCK, DELETION_BLOCK}:
             _version = [content_version for content_version in content_versions
                         if content_version.id == _version.parent_id
                         ][0]
@@ -52,18 +54,18 @@ class MutaBlock:
         # create copy of compiled_conttent without fields with None values
         compiled_content_cleaned = {}
         for key in list(compiled_content.keys()):
-            if compiled_content[key] != None:
+            if compiled_content[key] is not None:
                 compiled_content_cleaned.update({key: compiled_content[key]})
 
-        if compiled_content_cleaned == {}:
-            return None
+        # if compiled_content_cleaned == {}:
+        #     return None
         return compiled_content_cleaned
 
-    def edit(self, content: dict):
+    def edit(self, content: dict) -> None:
         self.mutablockchain.edit_mutablock(
             self.latest_content_version_id, content)
 
-    def delete(self):
+    def delete(self) -> None:
         self.mutablockchain.delete_mutablock(self.latest_content_version_id)
 
 

@@ -1,31 +1,39 @@
-import walytis_beta_api
-import os
+"""A virtual Blockchain with mutable blocks."""
 import json
+import os
+from typing import Callable
+
+import appdirs
+import walytis_beta_api
+from brenthy_tools_beta.utils import bytes_to_string
+from walytis_beta_api import Block, Blockchain
+
 import mutablock
 from blockstore import BlockStore
-from brenthy_tools_beta.utils import bytes_to_string, string_to_bytes
-import appdirs
+from mutablock import MutaBlock
 
 
 class MutaBlockchain(BlockStore):
-    def __init__(self,
-                 base_blockchain_type,
-                 blockchain_id: str,
-                 app_name: str = 'temp',
-                 block_received_handler=None,
-                 auto_load_missed_blocks: bool = True,
-                 forget_appdata=False,
-                 sequential_block_handling=True
-                 ):
+    def __init__(
+        self,
+        base_blockchain_type,
+        blockchain_id: str,
+        app_name: str = "",
+        block_received_handler: Callable[[Block], None] | None = None,
+        auto_load_missed_blocks: bool = True,
+        forget_appdata: bool = False,
+        sequential_block_handling: bool = True
+    ):
         self.db_path = os.path.join(
             appdirs.user_data_dir(),
             "MutaBlockchains",
             blockchain_id
         )
+        BlockStore.__init__(self)
         self.init_blockstore()
 
         self.block_received_handler = block_received_handler
-        self.base_blockchain: walytis_beta_api.Blockchain = base_blockchain_type(
+        self.base_blockchain: Blockchain = base_blockchain_type(
             blockchain_id=blockchain_id,
             app_name=app_name,
             block_received_handler=self._on_block_received,
@@ -35,15 +43,25 @@ class MutaBlockchain(BlockStore):
         )
         self.blockchain_id = self.base_blockchain.blockchain_id
 
-    def create(base_blockchain_type, blockchain_name: str = "", app_name: str = "", block_received_handler=None):    # pylint: disable=no-self-argument
-        blockchain = base_blockchain_type.create(blockchain_name)
+    @classmethod
+    def create(
+        cls,
+        base_blockchain_type,
+        blockchain_name: str = "",
+        app_name: str = "",
+        block_received_handler: Callable[[Block], None] | None = None
+    ) -> 'MutaBlockchain':    # pylint: disable=no-self-argument
+        blockchain: Blockchain = base_blockchain_type.create(blockchain_name)
         blockchain_id = blockchain.blockchain_id
         blockchain.terminate()
 
-        return MutaBlockchain(base_blockchain_type=base_blockchain_type, blockchain_id=blockchain_id, app_name=app_name,
-                              block_received_handler=block_received_handler)
+        return cls(
+            base_blockchain_type=base_blockchain_type,
+            blockchain_id=blockchain_id, app_name=app_name,
+            block_received_handler=block_received_handler
+        )
 
-    def add_mutablock(self, content: dict, topics: list = []):
+    def add_mutablock(self, content: dict, topics: list = []) -> MutaBlock:
         wrapped_content = {
             "type": mutablock.ORIGINAL_BLOCK,
             "content": content
@@ -56,9 +74,9 @@ class MutaBlockchain(BlockStore):
         print("Created mutablock.")
         return mutablock.MutaBlock(block.short_id, self)
 
-    def edit_mutablock(self, parent_id: str, content: dict):
+    def edit_mutablock(self, parent_id: str, content: dict) -> None:
         print("Editing mutablock")
-        if isinstance(parent_id, bytes) or isinstance(parent_id, bytearray):
+        if isinstance(parent_id, (bytearray, bytes)):
             parent_id = bytes_to_string(parent_id)
         wrapped_content = {
             "type": mutablock.UPDATE_BLOCK,
@@ -71,7 +89,7 @@ class MutaBlockchain(BlockStore):
         print("Createed update block")
         self._on_block_received(block)
 
-    def delete_mutablock(self, parent_id: str):
+    def delete_mutablock(self, parent_id: str) -> None:
         wrapped_content = {
             "type": mutablock.DELETION_BLOCK,
             "parent_block": parent_id,
@@ -83,13 +101,13 @@ class MutaBlockchain(BlockStore):
         )
         self._on_block_received(block)
 
-    def get_mutablock_ids(self):
+    def get_mutablock_ids(self) -> list[str]:
         return self.get_mutablocks()
 
-    def get_mutablock(self, id):
-        return mutablock.MutaBlock(id, self)
+    def get_mutablock(self, id: str) -> MutaBlock:
+        return MutaBlock(id, self)
 
-    def _on_block_received(self, block: walytis_beta_api.Block):  # pylint: disable=no-self-argument
+    def _on_block_received(self, block: walytis_beta_api.Block) -> None:  # pylint: disable=no-self-argument
         id = bytes_to_string(block.short_id)    # pylint: disable=no-member
         block_content = json.loads(
             block.content.decode())  # pylint: disable=no-member
@@ -121,11 +139,11 @@ class MutaBlockchain(BlockStore):
         if self.block_received_handler:
             self.block_received_handler(block)
 
-    def delete(self):
+    def delete(self) -> None:
         self.base_blockchain.delete()
 
-    def terminate(self):
+    def terminate(self) -> None:
         self.base_blockchain.terminate()
 
-    def __del__(self):
+    def __del__(self) -> None:
         self.terminate()
