@@ -19,14 +19,14 @@ def string_to_time(string):
 class BlockStore:
     db_path = "content_versions.db"
 
-    def create_block_database(self):
+    def init_blockstore(self):
         db_dir = os.path.dirname(self.db_path)
         if not os.path.exists(db_dir):
             os.makedirs(db_dir)
 
         # Connect to the SQLite database
-        connection = sqlite3.connect(self.db_path)
-        cursor = connection.cursor()
+        self.db = sqlite3.connect(self.db_path)
+        cursor = self.db.cursor()
 
         # Create a table to store mutablock.MutaBlock.ContentVersions
         cursor.execute('''
@@ -39,10 +39,8 @@ class BlockStore:
                 timestamp TEXT NOT NULL
             )
         ''')
-        connection.commit()
-
-        # Close the connection
-        connection.close()
+        self.db.commit()
+        cursor.close()
 
     def add_content_version(self, content_version):
         """Store ContentVersions in the database"""
@@ -52,19 +50,17 @@ class BlockStore:
             if original_version.id != content_version.original_id:
                 raise CorruptContentAncestryError()
 
-        connection = sqlite3.connect(self.db_path)
-        cursor = connection.cursor()
+        cursor = self.db.cursor()
         cursor.execute("INSERT INTO content_versions (type, id, parent_id, original_id, content, timestamp) VALUES (?, ?, ?, ?, ?, ?)",
                        (content_version.type, content_version.id, content_version.parent_id, content_version.original_id,
                         json.dumps(content_version.content), time_to_string(content_version.timestamp)))
-        connection.commit()
-        connection.close()
+        self.db.commit()
+        cursor.close()
 
     # Retrieve MutaBlock.ContentVersions from the database
 
     def retrieve_content_versions(self):
-        connection = sqlite3.connect(self.db_path)
-        cursor = connection.cursor()
+        cursor = self.db.cursor()
 
         cursor.execute(
             "SELECT type, id, parent_id, original_id, content, timestamp FROM content_versions")
@@ -74,18 +70,17 @@ class BlockStore:
             content_version = mutablock.ContentVersion(
                 type=row[0], id=row[1], parent_id=row[2], original_id=row[3], content=json.loads(row[4]), timestamp=string_to_time(row[5]))
             content_versions.append(content_version)
-        connection.close()
+        cursor.close()
         return content_versions
 
     # Retrieve a mutablock.ContentVersion from the database by id
 
     def get_content_version(self, content_version_id: str):
-        connection = sqlite3.connect(self.db_path)
-        cursor = connection.cursor()
+        cursor = self.db.cursor()
         cursor.execute(
             "SELECT type, parent_id, original_id, content, timestamp FROM content_versions WHERE id = ?", (content_version_id,))
         row = cursor.fetchone()
-        connection.close()
+        cursor.close()
 
         if row:
             return mutablock.ContentVersion(type=row[0], id=content_version_id, parent_id=row[1], original_id=row[2], content=json.loads(row[3]), timestamp=string_to_time(row[4]))
@@ -93,8 +88,7 @@ class BlockStore:
             return None
 
     def get_mutablock_content_versions(self, mutablock_id: str):
-        connection = sqlite3.connect(self.db_path)
-        cursor = connection.cursor()
+        cursor = self.db.cursor()
         cursor.execute(
             '''SELECT type, id, parent_id, original_id, content, timestamp
             FROM content_versions
@@ -102,7 +96,7 @@ class BlockStore:
             ORDER BY timestamp
             ''', (mutablock_id,))
         rows = cursor.fetchall()
-        connection.close()
+        cursor.close()
 
         content_versions = []
         for row in rows:
@@ -119,8 +113,7 @@ class BlockStore:
 
     def get_mutablocks(self, ):
         """Returns IDs of MutaBlocks"""
-        connection = sqlite3.connect(self.db_path)
-        cursor = connection.cursor()
+        cursor = self.db.cursor()
 
         cursor.execute(
             f'''SELECT id
@@ -129,18 +122,17 @@ class BlockStore:
             ''', (mutablock.ORIGINAL_BLOCK,))
         rows = cursor.fetchall()
         content_versions = []
-        connection.close()
+        cursor.close()
         return [row[0] for row in rows]
 
     # Delete a mutablock.MutaBlock.ContentVersion from the database based on its id
 
     def delete_content_version_by_id(self, content_version_id):
-        connection = sqlite3.connect(self.db_path)
-        cursor = connection.cursor()
+        cursor = self.db.cursor()
         cursor.execute("DELETE FROM content_versions WHERE id = ?",
                        (content_version_id,))
-        connection.commit()
-        connection.close()
+        self.db.commit()
+        cursor.close()
 
     def verify_original(self, contentv_id):
         """
@@ -157,14 +149,19 @@ class BlockStore:
                 return None
         return parent_version  # return original content_version
 
-
+    def terminate(self):
+        self.db.close()
+        
+    def __del__(self):
+        self.terminate()
+        
 class CorruptContentAncestryError(Exception):
     def __str__(self):
         return "CORRUPT DATA: false original ID found"
 
 
 def demo():
-    create_block_database()
+    init_blockstore()
     # Example usage
     cv1 = mutablock.ContentVersion("ORIGINAL_BLOCK", "1", "",
                                    "original1", {"data": "Example 1"})
