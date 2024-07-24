@@ -45,6 +45,7 @@ def test_update_mutablock():
     print("Updating mutablock...")
     updated_content = {"message": "Hello there!", "author": "me"}
     block.edit({"message": "Hello there!"})
+    print("Updated mutablock, checking...")
     assert blockchain.get_mutablock(
         block.id).current_content() == block.current_content() == updated_content, "Mutablock update failed"
 

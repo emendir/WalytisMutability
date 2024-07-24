@@ -101,20 +101,24 @@ class MutaBlockchain(BlockStore):
         )
         self._on_block_received(block)
 
-    def get_mutablock_ids(self) -> list[str]:
-        return self.get_mutablocks()
-
     def get_mutablock(self, id: str) -> MutaBlock:
         return MutaBlock(id, self)
 
     def _on_block_received(self, block: walytis_beta_api.Block) -> None:  # pylint: disable=no-self-argument
-        id = bytes_to_string(block.short_id)    # pylint: disable=no-member
+        print("OBR: Received block!")
+        block_id = bytes_to_string(block.short_id)    # pylint: disable=no-member
+        print("OBR: Checking known blocks...")
+        if block_id in self.get_content_block_ids():
+            print("OBR: We already have that block")
+            return
+        print("OBR: loading block details...")
         block_content = json.loads(
             block.content.decode())  # pylint: disable=no-member
 
         content_type = block_content['type']
         timestamp = block.creation_time
 
+        print("OBR:", content_type)
         if content_type == mutablock.ORIGINAL_BLOCK:
             parent_id = ""
             original_id = bytes_to_string(block.short_id)
@@ -127,15 +131,16 @@ class MutaBlockchain(BlockStore):
             parent_id = block_content['parent_block']
             original_id = self.verify_original(parent_id).id
             content = {}
+        print("OBR: Adding mutablock...")
         self.add_content_version(mutablock.ContentVersion(
             type=content_type,
-            id=id,
+            id=block_id,
             parent_id=parent_id,
             original_id=original_id,
             content=content,
             timestamp=timestamp
         ))
-
+        print("OBR: Finished processing received block.")
         if self.block_received_handler:
             self.block_received_handler(block)
 

@@ -46,7 +46,7 @@ class BlockStore(DedicatedThreadClass):
     @run_on_dedicated_thread
     def add_content_version(self, content_version: ContentVersion) -> None:
         """Store ContentVersions in the database."""
-        print("Storing", content_version.type)
+        print("Storing", content_version.type, content_version.id)
         if content_version.type != mutablock.ORIGINAL_BLOCK:
             original_version = self.verify_original(content_version.parent_id)
             if original_version.id != content_version.original_id:
@@ -135,7 +135,7 @@ class BlockStore(DedicatedThreadClass):
         return content_versions
 
     @run_on_dedicated_thread
-    def get_mutablocks(self, ) -> list[str]:
+    def get_mutablock_ids(self, ) -> list[str]:
         """Get the IDs of all MutaBlocks."""
         cursor = self.db.cursor()
 
@@ -148,6 +148,18 @@ class BlockStore(DedicatedThreadClass):
         cursor.close()
         return [row[0] for row in rows]
 
+    @run_on_dedicated_thread
+    def get_content_block_ids(self, ) -> list[str]:
+        """Get the IDs of all MutaBlocks."""
+        cursor = self.db.cursor()
+
+        cursor.execute(
+            f'''SELECT id
+            FROM content_versions
+            ''')
+        rows = cursor.fetchall()
+        cursor.close()
+        return [row[0] for row in rows]
     # Delete a mutablock.MutaBlock.ContentVersion from the database based on its id
 
     @run_on_dedicated_thread
