@@ -1,6 +1,7 @@
 from mutablockchain import MutaBlockchain
 from mutablock import MutaBlock
-import walytis_beta_api
+import walytis_beta_api as waly
+from testing_utils import mark, test_threads_cleanup
 
 
 blockchain: MutaBlockchain
@@ -13,17 +14,23 @@ def _on_block_received(block):
 
 
 def test_prepare():
-    try:
-        walytis_beta_api.delete_blockchain("MutablocksTest")
-    except:
-        pass
+    if "MutablocksTest" in waly.list_blockchain_names():
+        waly.delete_blockchain("MutablocksTest")
 
 
 def test_create_mutablockchain():
     global blockchain
     print("Creating mutablockchain...")
-    blockchain = MutaBlockchain.create(walytis_beta_api.Blockchain, blockchain_name="MutablocksTest",
-                                       app_name="tmp", block_received_handler=_on_block_received)
+    blockchain = MutaBlockchain.create(
+        waly.Blockchain,
+        blockchain_name="MutablocksTest",
+        app_name="tmp",
+        block_received_handler=_on_block_received
+    )
+    mark(
+        blockchain.blockchain_id in waly.list_blockchain_ids(),
+        "Create Mutablockchain"
+    )
 
 
 def test_create_mutablock():
@@ -31,14 +38,17 @@ def test_create_mutablock():
     global blockchain
     print("Loading MutaBlockchain...")
 
-    blockchain = MutaBlockchain(walytis_beta_api.Blockchain, blockchain_id=blockchain.blockchain_id,
+    blockchain = MutaBlockchain(waly.Blockchain, blockchain_id=blockchain.blockchain_id,
                                 app_name="tmp", block_received_handler=_on_block_received)
     content = {"message": "hello there", "author": "me"}
     print("Creating mutablock...")
     block = blockchain.add_mutablock(content)
     print("Created mutablock.")
-    assert blockchain.get_mutablock(block.id).current_content(
-    ) == block.current_content() == content, "Mutablock creation failed"
+    mark(
+        blockchain.get_mutablock(block.id).current_content(
+        ) == block.current_content() == content,
+        "Mutablock creation"
+    )
 
 
 def test_update_mutablock():
@@ -46,8 +56,10 @@ def test_update_mutablock():
     updated_content = {"message": "Hello there!", "author": "me"}
     block.edit({"message": "Hello there!"})
     print("Updated mutablock, checking...")
-    assert blockchain.get_mutablock(
-        block.id).current_content() == block.current_content() == updated_content, "Mutablock update failed"
+    mark(blockchain.get_mutablock(
+        block.id).current_content() == block.current_content() == updated_content,
+        "Mutablock update"
+    )
 
 
 def test_delete_mutablock():
@@ -59,13 +71,16 @@ def test_delete_mutablock():
 def test_delete_mutablockchain():
     print("Deleting mutablockchain...")
     blockchain.delete()
-    assert blockchain.get_mutablock(
-        block.id).current_content() == block.current_content() == None, "Mutablock update failed"
+    mark(
+        blockchain.blockchain_id not in waly.list_blockchain_ids(),
+        "Delete Mutablockchain"
+    )
 
 
 def test_cleanup():
     print("Cleaning up...")
     blockchain.terminate()
+    test_threads_cleanup()
 
 
 def run_tests():
