@@ -1,8 +1,19 @@
-from mutablockchain import MutaBlockchain
-from mutablock import MutaBlock
-import walytis_beta_api as waly
-from testing_utils import mark, test_threads_cleanup
 
+import walytis_beta_api as waly
+import testing_utils
+from testing_utils import mark, test_threads_cleanup
+import os
+import sys
+
+
+if True:
+    # for Hydrogen
+    if False:
+        __file__ = "./test_thread_object.py"
+    sys.path.insert(0, os.path.join(
+        os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "src"
+    ))
+    from mutablockchain import MutaBlockchain, MutaBlock
 
 blockchain: MutaBlockchain
 block_id: str
@@ -94,4 +105,5 @@ def run_tests():
 
 
 if __name__ == "__main__":
+    testing_utils.PYTEST = False
     run_tests()

@@ -1,12 +1,13 @@
 """The machinery for MutaBlock storage in an SQLite database."""
+import json
 import os
 import sqlite3
-import mutablock
-from mutablock import ContentVersion
-import json
-from datetime import datetime
-from threaded_object import DedicatedThreadClass, run_on_dedicated_thread
+
 from brenthy_tools_beta.utils import string_to_time, time_to_string
+
+from .mutablock import ORIGINAL_BLOCK, ContentVersion
+from .threaded_object import DedicatedThreadClass, run_on_dedicated_thread
+
 TIME_FORMAT = '%Y.%m.%d_%H.%M.%S.%f'
 
 
@@ -47,7 +48,7 @@ class BlockStore(DedicatedThreadClass):
     def add_content_version(self, content_version: ContentVersion) -> None:
         """Store ContentVersions in the database."""
         print("Storing", content_version.type, content_version.id)
-        if content_version.type != mutablock.ORIGINAL_BLOCK:
+        if content_version.type != ORIGINAL_BLOCK:
             original_version = self.verify_original(content_version.parent_id)
             if original_version.id != content_version.original_id:
                 raise CorruptContentAncestryError()
@@ -140,10 +141,10 @@ class BlockStore(DedicatedThreadClass):
         cursor = self.db.cursor()
 
         cursor.execute(
-            f'''SELECT id
+            '''SELECT id
             FROM content_versions
             WHERE type = ?
-            ''', (mutablock.ORIGINAL_BLOCK,))
+            ''', (ORIGINAL_BLOCK,))
         rows = cursor.fetchall()
         cursor.close()
         return [row[0] for row in rows]
@@ -154,7 +155,7 @@ class BlockStore(DedicatedThreadClass):
         cursor = self.db.cursor()
 
         cursor.execute(
-            f'''SELECT id
+            '''SELECT id
             FROM content_versions
             ''')
         rows = cursor.fetchall()
@@ -180,7 +181,7 @@ class BlockStore(DedicatedThreadClass):
         """
         parent_version = self.get_content_version(contentv_id)
         expected_original_id = parent_version.original_id
-        while parent_version.type != mutablock.ORIGINAL_BLOCK:
+        while parent_version.type != ORIGINAL_BLOCK:
             parent_version = self.get_content_version(parent_version.parent_id)
             if parent_version.original_id != expected_original_id:
                 raise CorruptContentAncestryError()

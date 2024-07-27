@@ -8,9 +8,14 @@ import walytis_beta_api
 from brenthy_tools_beta.utils import bytes_to_string
 from walytis_beta_api import Block, Blockchain
 
-import mutablock
-from blockstore import BlockStore
-from mutablock import MutaBlock
+from .blockstore import BlockStore
+from .mutablock import (
+    DELETION_BLOCK,
+    ORIGINAL_BLOCK,
+    UPDATE_BLOCK,
+    ContentVersion,
+    MutaBlock,
+)
 
 
 class MutaBlockchain(BlockStore):
@@ -63,7 +68,7 @@ class MutaBlockchain(BlockStore):
 
     def add_mutablock(self, content: dict, topics: list = []) -> MutaBlock:
         wrapped_content = {
-            "type": mutablock.ORIGINAL_BLOCK,
+            "type": ORIGINAL_BLOCK,
             "content": content
         }
         block = self.base_blockchain.add_block(
@@ -72,14 +77,14 @@ class MutaBlockchain(BlockStore):
         )
         self._on_block_received(block)
         print("Created mutablock.")
-        return mutablock.MutaBlock(block.short_id, self)
+        return MutaBlock(block.short_id, self)
 
     def edit_mutablock(self, parent_id: str, content: dict) -> None:
         print("Editing mutablock")
         if isinstance(parent_id, (bytearray, bytes)):
             parent_id = bytes_to_string(parent_id)
         wrapped_content = {
-            "type": mutablock.UPDATE_BLOCK,
+            "type": UPDATE_BLOCK,
             "parent_block": parent_id,
             "content": content
         }
@@ -91,7 +96,7 @@ class MutaBlockchain(BlockStore):
 
     def delete_mutablock(self, parent_id: str) -> None:
         wrapped_content = {
-            "type": mutablock.DELETION_BLOCK,
+            "type": DELETION_BLOCK,
             "parent_block": parent_id,
         }
         block = self.base_blockchain.add_block(
@@ -119,20 +124,20 @@ class MutaBlockchain(BlockStore):
         timestamp = block.creation_time
 
         print("OBR:", content_type)
-        if content_type == mutablock.ORIGINAL_BLOCK:
+        if content_type == ORIGINAL_BLOCK:
             parent_id = ""
             original_id = bytes_to_string(block.short_id)
             content = block_content['content']
-        elif content_type == mutablock.UPDATE_BLOCK:
+        elif content_type == UPDATE_BLOCK:
             parent_id = block_content['parent_block']
             original_id = self.verify_original(parent_id).id
             content = block_content['content']
-        elif content_type == mutablock.DELETION_BLOCK:
+        elif content_type == DELETION_BLOCK:
             parent_id = block_content['parent_block']
             original_id = self.verify_original(parent_id).id
             content = {}
         print("OBR: Adding mutablock...")
-        self.add_content_version(mutablock.ContentVersion(
+        self.add_content_version(ContentVersion(
             type=content_type,
             id=block_id,
             parent_id=parent_id,

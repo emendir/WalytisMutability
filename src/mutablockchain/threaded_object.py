@@ -4,9 +4,10 @@ import functools
 import queue
 import threading
 from queue import Queue
-from threading import Thread, Event
+from threading import Thread
 from typing import Any, Callable, Tuple
-from utils import logger
+
+from .utils import logger
 
 
 class DedicatedThreadClass:

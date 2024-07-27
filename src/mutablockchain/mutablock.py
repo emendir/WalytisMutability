@@ -1,9 +1,8 @@
 from dataclasses import dataclass
 from datetime import datetime
 
+from .mutablockchain import Blockchain
 from brenthy_tools_beta.utils import bytes_to_string
-
-import mutablockchain as _mutablockchain
 
 ORIGINAL_BLOCK = "original"
 UPDATE_BLOCK = "update"
@@ -13,12 +12,12 @@ DELETION_BLOCK = "deletion"
 class MutaBlock:
     latest_content_version_id: str
 
-    def __init__(self, id: str, mutablockchain: _mutablockchain.Blockchain):
+    def __init__(self, id: str, mutablockchain: Blockchain):
         if isinstance(id, (bytes, bytearray)):
             id = bytes_to_string(id)
 
         self.id = id
-        self.mutablockchain: _mutablockchain.Blockchain = mutablockchain
+        self.mutablockchain: Blockchain = mutablockchain
 
     def current_content(self) -> dict:
         """Get the compilation of the multiple ContentVersion's content."""
