@@ -1,178 +1,94 @@
 """The machinery for MutaBlock storage in an SQLite database."""
+from decorate_all import decorate_all_functions
+from strict_typing import strictly_typed
 import json
 import os
 import sqlite3
-
-from brenthy_tools_beta.utils import string_to_time, time_to_string
-
-from .mutablock import ORIGINAL_BLOCK, ContentVersion
+from abc import ABC, abstractmethod
+from brenthy_tools_beta.utils import string_to_time, time_to_string, bytes_to_string
+from walytis_beta_api import Block, decode_short_id
+from .mutablock import ORIGINAL_BLOCK, ContentVersion, BLOCK_TYPES
 from .threaded_object import DedicatedThreadClass, run_on_dedicated_thread
-
+from .utils import logger
 TIME_FORMAT = '%Y.%m.%d_%H.%M.%S.%f'
 
 
-class BlockStore(DedicatedThreadClass):
+class BlockStore(ABC):
     """MutaBlock storage management in an SQLite database."""
 
     db_path = "content_versions.db"
 
-    def __init__(self):
-        DedicatedThreadClass.__init__(self)
+    @abstractmethod
+    def decode_base_block(self, block: Block) -> ContentVersion:
+        pass
 
-    @run_on_dedicated_thread
     def init_blockstore(self) -> None:
         """Initialise."""
-        db_dir = os.path.dirname(self.db_path)
-        if not os.path.exists(db_dir):
-            os.makedirs(db_dir)
+        pass
 
-        # Connect to the SQLite database
-        self.db = sqlite3.connect(self.db_path)
-        cursor = self.db.cursor()
-
-        # Create a table to store mutablock.MutaBlock.ContentVersions
-        cursor.execute('''
-            CREATE TABLE IF NOT EXISTS content_versions (
-                id TEXT PRIMARY KEY,
-                type TEXT NOT NULL,
-                parent_id TEXT NOT NULL,
-                original_id TEXT NOT NULL,
-                content TEXT NOT NULL,
-                timestamp TEXT NOT NULL
-            )
-        ''')
-        self.db.commit()
-        cursor.close()
-
-    @run_on_dedicated_thread
     def add_content_version(self, content_version: ContentVersion) -> None:
         """Store ContentVersions in the database."""
-        print("Storing", content_version.type, content_version.id)
-        if content_version.type != ORIGINAL_BLOCK:
-            original_version = self.verify_original(content_version.parent_id)
-            if original_version.id != content_version.original_id:
-                raise CorruptContentAncestryError()
-
-        cursor = self.db.cursor()
-        cursor.execute(
-            '''INSERT INTO content_versions (
-                type, id, parent_id, original_id, content, timestamp
-            )
-            VALUES (?, ?, ?, ?, ?, ?)
-            ''',
-            (
-                content_version.type,
-                content_version.id,
-                content_version.parent_id,
-                content_version.original_id,
-                json.dumps(content_version.content),
-                time_to_string(content_version.timestamp)
-            )
-        )
-        self.db.commit()
-        cursor.close()
-
-    # Retrieve MutaBlock.ContentVersions from the database
-
-    @run_on_dedicated_thread
-    def retrieve_content_versions(self) -> list[ContentVersion]:
-        cursor = self.db.cursor()
-
-        cursor.execute(
-            "SELECT type, id, parent_id, original_id, content, timestamp FROM content_versions")
-        rows = cursor.fetchall()
-        content_versions = []
-        for row in rows:
-            content_version = ContentVersion(
-                type=row[0], id=row[1], parent_id=row[2], original_id=row[3], content=json.loads(row[4]), timestamp=string_to_time(row[5]))
-            content_versions.append(content_version)
-        cursor.close()
-        return content_versions
+        pass
 
     # Retrieve a ContentVersion from the database by id
 
-    @run_on_dedicated_thread
     def get_content_version(
-        self, content_version_id: str
+        self, content_version_id: bytes | bytearray
     ) -> ContentVersion | None:
         """Get a ContentVersion given its ID."""
-        cursor = self.db.cursor()
-        cursor.execute(
-            "SELECT type, parent_id, original_id, content, timestamp FROM content_versions WHERE id = ?", (content_version_id,))
-        row = cursor.fetchone()
-        cursor.close()
+        return self.decode_base_block(
+            self.base_blockchain.get_block(content_version_id)
+        )
 
-        if row:
-            return ContentVersion(type=row[0], id=content_version_id, parent_id=row[1], original_id=row[2], content=json.loads(row[3]), timestamp=string_to_time(row[4]))
-        else:
-            return None
-
-    @run_on_dedicated_thread
-    def get_mutablock_content_versions(
-        self, mutablock_id: str
-    ) -> list[ContentVersion]:
+    def get_mutablock_content_version_ids(
+        self, mutablock_id: bytearray | bytes
+    ) -> list[bytearray]:
         """Get the content versions of the specified MutaBlock."""
-        cursor = self.db.cursor()
-        cursor.execute(
-            '''SELECT type, id, parent_id, original_id, content, timestamp
-            FROM content_versions
-            WHERE original_id = ?
-            ORDER BY timestamp
-            ''', (mutablock_id,))
-        rows = cursor.fetchall()
-        cursor.close()
+        content_version_ids = [mutablock_id]
+        mutablock_id_str = bytes_to_string(mutablock_id)
+        for block_id in self.base_blockchain.block_ids:
+            topics = decode_short_id(block_id)["topics"]
+            if (
+                len(topics) >= 2
+                and topics[0] in BLOCK_TYPES and topics[1] == mutablock_id_str
+            ):
+                content_version_ids.append(block_id)
+        content_version_ids.sort(
+            key=lambda block_id: decode_short_id(block_id)["creation_time"]
+        )
+        return content_version_ids
 
-        content_versions = []
-        for row in rows:
-            content_version = ContentVersion(
-                type=row[0],
-                id=row[1],
-                parent_id=row[2],
-                original_id=row[3],
-                content=json.loads(row[4]),
-                timestamp=string_to_time(row[5])
+    def get_mutablock_content_versions(
+        self, mutablock_id: bytearray | bytes
+    ) -> list[ContentVersion]:
+        return [
+            self.decode_base_block(
+                self.base_blockchain.get_block(block_id)
             )
-            content_versions.append(content_version)
-        return content_versions
+            for block_id in self.get_mutablock_content_version_ids(mutablock_id)
+        ]
 
-    @run_on_dedicated_thread
     def get_mutablock_ids(self, ) -> list[str]:
         """Get the IDs of all MutaBlocks."""
-        cursor = self.db.cursor()
+        mutablock_ids = []
+        for block_id in self.base_blockchain.block_ids:
+            topics = decode_short_id(block_id)["topics"]
+            if len(topics) >= 1 and topics[0] == ORIGINAL_BLOCK:
+                mutablock_ids.append(block_id)
+        return mutablock_ids
 
-        cursor.execute(
-            '''SELECT id
-            FROM content_versions
-            WHERE type = ?
-            ''', (ORIGINAL_BLOCK,))
-        rows = cursor.fetchall()
-        cursor.close()
-        return [row[0] for row in rows]
-
-    @run_on_dedicated_thread
     def get_content_block_ids(self, ) -> list[str]:
         """Get the IDs of all MutaBlocks."""
-        cursor = self.db.cursor()
 
-        cursor.execute(
-            '''SELECT id
-            FROM content_versions
-            ''')
-        rows = cursor.fetchall()
-        cursor.close()
-        return [row[0] for row in rows]
+        content_version_ids = []
+        for block_id in self.base_blockchain.block_ids:
+            topics = decode_short_id(block_id)["topics"]
+            if len(topics) >= 1 and topics[0] in BLOCK_TYPES:
+                content_version_ids.append(block_id)
+        return content_version_ids
     # Delete a mutablock.MutaBlock.ContentVersion from the database based on its id
 
-    @run_on_dedicated_thread
-    def delete_content_version_by_id(self, content_version_id: str) -> None:
-        cursor = self.db.cursor()
-        cursor.execute("DELETE FROM content_versions WHERE id = ?",
-                       (content_version_id,))
-        self.db.commit()
-        cursor.close()
-
-    @run_on_dedicated_thread
-    def verify_original(self, contentv_id) -> ContentVersion:
+    def verify_original(self, contentv_id: bytearray | bytes) -> ContentVersion:
         """Verify the consistency of a ContentVersion's chain of parents.
 
         Verifies if the original_id of the chain of parents of a content_version
@@ -201,25 +117,4 @@ class CorruptContentAncestryError(Exception):
         return "CORRUPT DATA: false original ID found"
 
 
-def demo():
-    block_store = BlockStore()
-    block_store.init_blockstore()
-    # Example usage
-    cv1 = ContentVersion("ORIGINAL_BLOCK", "1", "",
-                         "original1", {"data": "Example 1"})
-    cv2 = ContentVersion("UPDATE_BLOCK", "2", "1",
-                         "original2", {"data": "Example 2"})
-
-    block_store.add_content_version(cv1)
-    block_store.add_content_version(cv2)
-
-    retrieved_content_versions = block_store.retrieve_content_versions()
-    for cv in retrieved_content_versions:
-        print(cv)
-
-    block_store.delete_content_version_by_id("1")
-    block_store.delete_content_version_by_id("2")
-
-
-if __name__ == "__main__":
-    demo()
+decorate_all_functions(strictly_typed, __name__)

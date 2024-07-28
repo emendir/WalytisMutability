@@ -1,6 +1,9 @@
 from loguru import logger
 import sys
-logger.remove(0)
+try:
+    logger.remove(0)
+except ValueError:
+    pass
 logger.add(sys.stdout, format="<level>{message}</level>")
 
 

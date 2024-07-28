@@ -1,4 +1,6 @@
 
+from strict_typing import strictly_typed
+from decorate_all import decorate_all_functions
 import os
 
 import _testing_utils
@@ -12,7 +14,7 @@ _testing_utils.assert_is_loaded_from_source(
 )
 
 blockchain: MutaBlockchain
-block_id: str
+block_id: bytearray | bytes
 block: MutaBlock
 
 
@@ -47,24 +49,24 @@ def test_create_mutablock():
 
     blockchain = MutaBlockchain(waly.Blockchain, blockchain_id=blockchain.blockchain_id,
                                 app_name="tmp", block_received_handler=_on_block_received)
-    content = {"message": "hello there", "author": "me"}
+    content = "Hello world!".encode()
     print("Creating mutablock...")
-    block = blockchain.add_mutablock(content)
+    block = blockchain.add_block(content)
     print("Created mutablock.")
     mark(
-        blockchain.get_mutablock(block.id).current_content(
-        ) == block.current_content() == content,
+        blockchain.get_block(block.id).current_content_version(
+        ).content == block.current_content_version().content == content,
         "Mutablock creation"
     )
 
 
 def test_update_mutablock():
     print("Updating mutablock...")
-    updated_content = {"message": "Hello there!", "author": "me"}
-    block.edit({"message": "Hello there!"})
+    updated_content = "Hello there!".encode()
+    block.edit(updated_content)
     print("Updated mutablock, checking...")
-    mark(blockchain.get_mutablock(
-        block.id).current_content() == block.current_content() == updated_content,
+    mark(blockchain.get_block(
+        block.id).current_content_version().content == block.current_content_version().content == updated_content,
         "Mutablock update"
     )
 
@@ -103,3 +105,5 @@ def run_tests():
 if __name__ == "__main__":
     _testing_utils.PYTEST = False
     run_tests()
+
+decorate_all_functions(strictly_typed, __name__)
