@@ -1,14 +1,12 @@
 import os
 import sys
 import threading
-if True:
-    # for Hydrogen
-    if False:
-        __file__ = "./test_thread_object.py"
-    sys.path.insert(0, os.path.join(
-        os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "src"
-    ))
-    from threaded_object import DedicatedThreadClass, run_on_dedicated_thread
+import _testing_utils
+import mutablockchain
+from mutablockchain.threaded_object import DedicatedThreadClass, run_on_dedicated_thread
+_testing_utils.assert_is_loaded_from_source(
+    source_dir=os.path.dirname(os.path.dirname(__file__)), module=mutablockchain
+)
 
 thr = threading.current_thread()
 thr.ident
