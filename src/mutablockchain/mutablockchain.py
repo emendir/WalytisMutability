@@ -1,15 +1,12 @@
 """A virtual Blockchain with mutable blocks."""
-from decorate_all import decorate_all_functions
-from strict_typing import strictly_typed
-import json
-import os
 from typing import Callable
 
-import appdirs
 import walytis_beta_api
 from brenthy_tools_beta.utils import bytes_to_string, string_to_bytes
+from decorate_all import decorate_all_functions
+from strict_typing import strictly_typed
 from walytis_beta_api import Block, Blockchain
-from .utils import logger
+
 from .blockstore import BlockStore
 from .mutablock import (
     DELETION_BLOCK,
@@ -48,7 +45,7 @@ class MutaBlockchain(BlockStore):
             forget_appdata=forget_appdata,
             sequential_block_handling=sequential_block_handling
         )
-        self.base_blockchain.block_received_handler = self._on_block_received,
+        self.base_blockchain.block_received_handler = self._on_block_received
         self.base_blockchain.load_missed_blocks(walytis_beta_api.blockchain_model.N_STARTUP_BLOCKS)
         self.blockchain_id = self.base_blockchain.blockchain_id
 
@@ -97,7 +94,7 @@ class MutaBlockchain(BlockStore):
 
     def delete_block(self, parent_id: bytearray | bytes) -> None:
         if isinstance(parent_id, ContentVersion):
-            parent_id = parent_id.id
+            parent_id = parent_id.cv_id
         topics = [DELETION_BLOCK, bytes_to_string(parent_id)]
         block = self.base_blockchain.add_block(
             content=bytearray([3]),
@@ -109,39 +106,42 @@ class MutaBlockchain(BlockStore):
         return MutaBlock(id, self)
 
     def _on_block_received(self, block: walytis_beta_api.Block) -> None:  # pylint: disable=no-self-argument
-        print("OBR: Received block!")
+        # logger.debug("OBR: Received block!")
         block_id = bytes_to_string(
             block.short_id)    # pylint: disable=no-member
-        print("OBR: Checking known blocks...")
+        # logger.debug("OBR: Checking known blocks...")
         if block_id in self.get_content_block_ids():
-            print("OBR: We already have that block")
+            # logger.debug("OBR: We already have that block")
             return
-        print("OBR: loading block details...")
+        # logger.debug("OBR: loading block details...")
+        try:
+            content_version = self.decode_base_block(block)
+        except NotContentVersionBlockError:
+            return
+        self.add_content_version(content_version)
 
-        self.add_content_version((self.decode_base_block(block)))
-        print("OBR: Finished processing received block.")
+        # logger.debug("OBR: Finished processing received block.")
         if self.block_received_handler:
             self.block_received_handler(block)
 
     def decode_base_block(self, block: Block) -> ContentVersion:
-
         timestamp = block.creation_time
 
-        print("OBR:", block.topics[0])
+        # logger.debug("OBR:", block.topics[0])
         if len(block.topics) >= 1 and block.topics[0] == ORIGINAL_BLOCK:
-            parent_id = ""
+            parent_id = bytearray()
             original_id = block.short_id
             user_topics = block.topics[1:]
         elif len(block.topics) >= 2 and block.topics[0] in {UPDATE_BLOCK, DELETION_BLOCK}:
             parent_id = string_to_bytes(block.topics[1])
-            original_id = self.verify_original(parent_id).id
+            original_id = self.verify_original(parent_id).cv_id
             user_topics = block.topics[2:]
         else:
             raise NotContentVersionBlockError()
-        print("OBR: Adding mutablock...")
+        # logger.debug("OBR: Adding mutablock...")
         return ContentVersion(
             type=block.topics[0],
-            id=block.short_id,
+            cv_id=block.short_id,
             parent_id=parent_id,
             original_id=original_id,
             content=block.content,

@@ -17,14 +17,14 @@ class MutaBlock:
 
     def __init__(self, id: bytes | bytearray, mutablockchain: Blockchain):
 
-        self.id = id
+        self.short_id = id
         self.mutablockchain: Blockchain = mutablockchain
 
     def get_content_versions(self):
-        return self.mutablockchain.get_mutablock_content_versions(self.id)
+        return self.mutablockchain.get_mutablock_content_versions(self.short_id)
 
     def get_content_version_ids(self):
-        return self.mutablockchain.get_mutablock_content_version_ids(self.id)
+        return self.mutablockchain.get_mutablock_content_version_ids(self.short_id)
 
     def current_content_version(self) -> dict:
         """Get the compilation of the multiple ContentVersion's content."""
@@ -43,7 +43,7 @@ class MutaBlock:
 @dataclass
 class ContentVersion:
     type: str
-    id: bytearray | bytes  # same as the block ID that created this content version
+    cv_id: bytearray | bytes  # same as the block ID that created this content version
     parent_id: bytearray | bytes
     original_id: bytearray | bytes
     content: bytearray | bytes

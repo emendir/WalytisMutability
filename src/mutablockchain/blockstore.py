@@ -95,6 +95,7 @@ class BlockStore(ABC):
         are consistent. Raises an exception if not,
         returns the original content_version object if yes.
         """
+        # logger.debug(f"Verifying original:\n{contentv_id}")
         parent_version = self.get_content_version(contentv_id)
         expected_original_id = parent_version.original_id
         while parent_version.type != ORIGINAL_BLOCK:
