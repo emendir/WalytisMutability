@@ -6,7 +6,7 @@ from brenthy_tools_beta.utils import bytes_to_string, string_to_bytes
 from decorate_all import decorate_all_functions
 from strict_typing import strictly_typed
 from walytis_beta_api import Block, Blockchain
-
+from walytis_beta_api.generic_blockchain import GenericBlock, GenericBlockchain
 from .blockstore import BlockStore
 from .mutablock import (
     DELETION_BLOCK,
@@ -17,7 +17,9 @@ from .mutablock import (
 )
 
 
-class MutaBlockchain(BlockStore):
+class MutaBlockchain(BlockStore, GenericBlockchain):
+    block_received_handler: Callable[[GenericBlock], None] | None = None
+
     def __init__(
         self,
         base_blockchain_type,
@@ -47,7 +49,6 @@ class MutaBlockchain(BlockStore):
         )
         self.base_blockchain.block_received_handler = self._on_block_received
         self.base_blockchain.load_missed_blocks(walytis_beta_api.blockchain_model.N_STARTUP_BLOCKS)
-        self.blockchain_id = self.base_blockchain.blockchain_id
 
     @classmethod
     def create(
@@ -77,7 +78,7 @@ class MutaBlockchain(BlockStore):
         )
         self._on_block_received(block)
         print("Created mutablock.")
-        return MutaBlock(block.short_id, self)
+        return MutaBlock(block, self)
 
     def edit_block(self, parent_id: bytes | bytearray, content: bytes | bytearray) -> None:
         print("Editing mutablock")
@@ -103,7 +104,7 @@ class MutaBlockchain(BlockStore):
         self._on_block_received(block)
 
     def get_block(self, id: bytearray | bytes) -> MutaBlock:
-        return MutaBlock(id, self)
+        return MutaBlock(self.base_blockchain.get_block(id), self)
 
     def _on_block_received(self, block: walytis_beta_api.Block) -> None:  # pylint: disable=no-self-argument
         # logger.debug("OBR: Received block!")
@@ -148,6 +149,25 @@ class MutaBlockchain(BlockStore):
             timestamp=timestamp,
             topics=user_topics,
         )
+
+    def get_peers(self) -> list[str]:
+        return self.base_blockchain.get_peers()
+
+    @property
+    def app_name(self):
+        return self.base_blockchain.app_name
+
+    @property
+    def block_ids(self):
+        return self.base_blockchain.block_ids
+
+    @property
+    def blockchain_id(self):
+        return self.base_blockchain.blockchain_id
+
+    @property
+    def name(self):
+        return self.base_blockchain.name
 
     def delete(self) -> None:
         self.base_blockchain.delete()

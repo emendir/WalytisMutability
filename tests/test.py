@@ -13,7 +13,7 @@ _testing_utils.assert_is_loaded_from_source(
     source_dir=os.path.dirname(os.path.dirname(__file__)), module=mutablockchain
 )
 
-blockchain: MutaBlockchain
+m_blockchain: MutaBlockchain
 block_id: bytearray | bytes
 block: MutaBlock
 
@@ -28,33 +28,37 @@ def test_prepare():
 
 
 def test_create_mutablockchain():
-    global blockchain
+    global m_blockchain
     print("Creating mutablockchain...")
-    blockchain = MutaBlockchain.create(
+    m_blockchain = MutaBlockchain.create(
         waly.Blockchain,
         blockchain_name="MutablocksTest",
         app_name="tmp",
         block_received_handler=_on_block_received
     )
     mark(
-        blockchain.blockchain_id in waly.list_blockchain_ids(),
+        m_blockchain.blockchain_id in waly.list_blockchain_ids(),
         "Create Mutablockchain"
     )
 
 
 def test_create_mutablock():
     global block
-    global blockchain
+    global m_blockchain
     print("Loading MutaBlockchain...")
 
-    blockchain = MutaBlockchain(waly.Blockchain, blockchain_id=blockchain.blockchain_id,
-                                app_name="tmp", block_received_handler=_on_block_received)
+    m_blockchain = MutaBlockchain(
+        waly.Blockchain,
+        blockchain_id=m_blockchain.blockchain_id,
+        app_name="tmp",
+        block_received_handler=_on_block_received
+    )
     content = "Hello world!".encode()
     print("Creating mutablock...")
-    block = blockchain.add_block(content)
+    block = m_blockchain.add_block(content)
     print("Created mutablock.")
     mark(
-        blockchain.get_block(block.short_id).current_content_version(
+        m_blockchain.get_block(block.short_id).current_content_version(
         ).content == block.current_content_version().content == content,
         "Mutablock creation"
     )
@@ -65,7 +69,7 @@ def test_update_mutablock():
     updated_content = "Hello there!".encode()
     block.edit(updated_content)
     print("Updated mutablock, checking...")
-    mark(blockchain.get_block(
+    mark(m_blockchain.get_block(
         block.short_id).current_content_version().content == block.current_content_version().content == updated_content,
         "Mutablock update"
     )
@@ -74,21 +78,21 @@ def test_update_mutablock():
 def test_delete_mutablock():
     print("Deleting mutablock...")
     block.delete()
-    # assert blockchain.get_mutablock_ids() == []
+    # assert m_blockchain.get_mutablock_ids() == []
 
 
 def test_delete_mutablockchain():
     print("Deleting mutablockchain...")
-    blockchain.delete()
+    m_blockchain.delete()
     mark(
-        blockchain.blockchain_id not in waly.list_blockchain_ids(),
+        m_blockchain.blockchain_id not in waly.list_blockchain_ids(),
         "Delete Mutablockchain"
     )
 
 
 def test_cleanup():
     print("Cleaning up...")
-    blockchain.terminate()
+    m_blockchain.terminate()
     test_threads_cleanup()
 
 

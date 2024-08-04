@@ -2,7 +2,7 @@ from decorate_all import decorate_all_functions
 from strict_typing import strictly_typed
 from dataclasses import dataclass
 from datetime import datetime
-
+from walytis_beta_api.generic_blockchain import GenericBlock
 from .mutablockchain import Blockchain
 from brenthy_tools_beta.utils import bytes_to_string
 
@@ -13,12 +13,11 @@ DELETION_BLOCK = "MutaBlock-Deletion"
 BLOCK_TYPES = {ORIGINAL_BLOCK, UPDATE_BLOCK, DELETION_BLOCK}
 
 
-class MutaBlock:
+class MutaBlock(GenericBlock):
 
-    def __init__(self, id: bytes | bytearray, mutablockchain: Blockchain):
-
-        self.short_id = id
+    def __init__(self, base_block: GenericBlock, mutablockchain: Blockchain):
         self.mutablockchain: Blockchain = mutablockchain
+        self.base_block = base_block
 
     def get_content_versions(self):
         return self.mutablockchain.get_mutablock_content_versions(self.short_id)
@@ -38,6 +37,42 @@ class MutaBlock:
 
     def delete(self) -> None:
         self.mutablockchain.delete_block(self.get_content_version_ids()[-1])
+
+    @property
+    def ipfs_cid(self):
+        return self.base_block.ipfs_cid
+
+    @property
+    def short_id(self):
+        return self.base_block.short_id
+
+    @property
+    def long_id(self):
+        return self.base_block.long_id
+
+    @property
+    def creator_id(self):
+        return self.base_block.creator_id
+
+    @property
+    def creation_time(self):
+        return self.base_block.creation_time
+
+    @property
+    def topics(self):
+        return self.base_block.topics
+
+    @property
+    def content(self):
+        return self.base_block.content
+
+    @property
+    def parents(self):
+        return self.base_block.parents
+
+    @property
+    def file_data(self):
+        return self.base_block.file_data
 
 
 @dataclass
