@@ -22,9 +22,7 @@ class MutaBlockchain(BlockStore, GenericBlockchain):
 
     def __init__(
         self,
-        base_blockchain_type,
-        blockchain_id: bytearray | bytes,
-        app_name: str = "",
+        base_blockchain: bytearray | bytes,
         block_received_handler: Callable[[Block], None] | None = None,
         auto_load_missed_blocks: bool = True,
         forget_appdata: bool = False,
@@ -39,36 +37,15 @@ class MutaBlockchain(BlockStore, GenericBlockchain):
         self.init_blockstore()
 
         self.block_received_handler = block_received_handler
-        self.base_blockchain: Blockchain = base_blockchain_type(
-            blockchain_id=blockchain_id,
-            app_name=app_name,
-            block_received_handler=None,
-            auto_load_missed_blocks=False,
-            forget_appdata=forget_appdata,
-            sequential_block_handling=sequential_block_handling
-        )
+        self.base_blockchain = base_blockchain
         self.base_blockchain.block_received_handler = self._on_block_received
-        self.base_blockchain.load_missed_blocks(walytis_beta_api.blockchain_model.N_STARTUP_BLOCKS)
-
-    @classmethod
-    def create(
-        cls,
-        base_blockchain_type,
-        blockchain_name: str = "",
-        app_name: str = "",
-        block_received_handler: Callable[[Block], None] | None = None
-    ) -> 'MutaBlockchain':    # pylint: disable=no-self-argument
-        blockchain: Blockchain = base_blockchain_type.create(blockchain_name)
-        blockchain_id = blockchain.blockchain_id
-        blockchain.terminate()
-
-        return cls(
-            base_blockchain_type=base_blockchain_type,
-            blockchain_id=blockchain_id, app_name=app_name,
-            block_received_handler=block_received_handler
+        self.base_blockchain.load_missed_blocks(
+            walytis_beta_api.blockchain_model.N_STARTUP_BLOCKS
         )
 
-    def add_block(self, content: bytes | bytearray, topics: list[str] | str = "") -> MutaBlock:
+    def add_block(
+        self, content: bytes | bytearray, topics: list[str] | str = ""
+    ) -> MutaBlock:
         if isinstance(topics, str):
             topics = []
         topics = [ORIGINAL_BLOCK] + topics
@@ -80,7 +57,9 @@ class MutaBlockchain(BlockStore, GenericBlockchain):
         print("Created mutablock.")
         return MutaBlock(block, self)
 
-    def edit_block(self, parent_id: bytes | bytearray, content: bytes | bytearray) -> None:
+    def edit_block(
+        self, parent_id: bytes | bytearray, content: bytes | bytearray
+    ) -> None:
         print("Editing mutablock")
 
         if isinstance(parent_id, (bytearray, bytes)):
@@ -133,7 +112,8 @@ class MutaBlockchain(BlockStore, GenericBlockchain):
             parent_id = bytearray()
             original_id = block.short_id
             user_topics = block.topics[1:]
-        elif len(block.topics) >= 2 and block.topics[0] in {UPDATE_BLOCK, DELETION_BLOCK}:
+        elif (len(block.topics) >= 2
+              and block.topics[0] in {UPDATE_BLOCK, DELETION_BLOCK}):
             parent_id = string_to_bytes(block.topics[1])
             original_id = self.verify_original(parent_id).cv_id
             user_topics = block.topics[2:]
@@ -154,20 +134,12 @@ class MutaBlockchain(BlockStore, GenericBlockchain):
         return self.base_blockchain.get_peers()
 
     @property
-    def app_name(self):
-        return self.base_blockchain.app_name
-
-    @property
     def block_ids(self):
         return self.base_blockchain.block_ids
 
     @property
     def blockchain_id(self):
         return self.base_blockchain.blockchain_id
-
-    @property
-    def name(self):
-        return self.base_blockchain.name
 
     def delete(self) -> None:
         self.base_blockchain.delete()

@@ -8,6 +8,7 @@ import mutablockchain
 import walytis_beta_api as waly
 from _testing_utils import mark, test_threads_cleanup
 from mutablockchain import MutaBlock, MutaBlockchain
+from walytis_beta_api import Blockchain
 
 _testing_utils.assert_is_loaded_from_source(
     source_dir=os.path.dirname(os.path.dirname(__file__)), module=mutablockchain
@@ -29,13 +30,10 @@ def test_prepare():
 
 def test_create_mutablockchain():
     global m_blockchain
+    global base_blockchain
     print("Creating mutablockchain...")
-    m_blockchain = MutaBlockchain.create(
-        waly.Blockchain,
-        blockchain_name="MutablocksTest",
-        app_name="tmp",
-        block_received_handler=_on_block_received
-    )
+    base_blockchain = Blockchain.create()
+    m_blockchain = MutaBlockchain(base_blockchain)
     mark(
         m_blockchain.blockchain_id in waly.list_blockchain_ids(),
         "Create Mutablockchain"
@@ -48,9 +46,7 @@ def test_create_mutablock():
     print("Loading MutaBlockchain...")
 
     m_blockchain = MutaBlockchain(
-        waly.Blockchain,
-        blockchain_id=m_blockchain.blockchain_id,
-        app_name="tmp",
+        base_blockchain=base_blockchain,
         block_received_handler=_on_block_received
     )
     content = "Hello world!".encode()
