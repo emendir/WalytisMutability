@@ -15,6 +15,7 @@ from .mutablock import (
     ContentVersion,
     MutaBlock,
 )
+from loguru import logger
 
 
 class MutaBlockchain(BlockStore, GenericBlockchain):
@@ -39,9 +40,9 @@ class MutaBlockchain(BlockStore, GenericBlockchain):
         self.block_received_handler = block_received_handler
         self.base_blockchain = base_blockchain
         self.base_blockchain.block_received_handler = self._on_block_received
-        self.base_blockchain.load_missed_blocks(
-            walytis_beta_api.blockchain_model.N_STARTUP_BLOCKS
-        )
+        # self.base_blockchain.load_missed_blocks(
+        #     walytis_beta_api.blockchain_model.N_STARTUP_BLOCKS
+        # )
 
     def add_block(
         self, content: bytes | bytearray, topics: list[str] | str = ""
@@ -107,7 +108,9 @@ class MutaBlockchain(BlockStore, GenericBlockchain):
     def decode_base_block(self, block: Block) -> ContentVersion:
         timestamp = block.creation_time
 
-        # logger.debug("OBR:", block.topics[0])
+        logger.debug(f"OBR: {block.topics}")
+        logger.debug(f"OBR: {type(block)}")
+        # breakpoint()
         if len(block.topics) >= 1 and block.topics[0] == ORIGINAL_BLOCK:
             parent_id = bytearray()
             original_id = block.short_id

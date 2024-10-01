@@ -29,7 +29,7 @@ class MutaBlock(GenericBlock):
         """Get the compilation of the multiple ContentVersion's content."""
         return self.get_content_versions()[-1]
 
-    def edit(self, content: dict) -> None:
+    def edit(self, content: bytes) -> None:
         self.mutablockchain.edit_block(
             self.get_content_version_ids()[-1],
             content
@@ -60,7 +60,7 @@ class MutaBlock(GenericBlock):
 
     @property
     def topics(self):
-        return self.base_block.topics
+        return self.base_block.topics[1:]
 
     @property
     def content(self):
