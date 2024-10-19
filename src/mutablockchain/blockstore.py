@@ -46,13 +46,14 @@ class BlockStore(ABC):
         """Get the content versions of the specified MutaBlock."""
         content_version_ids = [mutablock_id]
         mutablock_id_str = bytes_to_string(mutablock_id)
-        for block_id in self.base_blockchain.block_ids:
-            topics = decode_short_id(block_id)["topics"]
+        for block_id in self.base_blockchain.blocks:
+            block = self.base_blockchain.blocks[block_id]
+            topics = block.topics
             if (
                 len(topics) >= 2
                 and topics[0] in BLOCK_TYPES and topics[1] == mutablock_id_str
             ):
-                content_version_ids.append(block_id)
+                content_version_ids.append(block.long_id)
         content_version_ids.sort(
             key=lambda block_id: decode_short_id(block_id)["creation_time"]
         )
@@ -71,20 +72,22 @@ class BlockStore(ABC):
     def get_mutablock_ids(self, ) -> list[str]:
         """Get the IDs of all MutaBlocks."""
         mutablock_ids = []
-        for block_id in self.base_blockchain.block_ids:
-            topics = decode_short_id(block_id)["topics"]
+        for block_id in self.base_blockchain.blocks:
+            block = self.base_blockchain.blocks[block_id]
+            topics = block.topics
             if len(topics) >= 1 and topics[0] == ORIGINAL_BLOCK:
-                mutablock_ids.append(block_id)
+                mutablock_ids.append(block.long_id)
         return mutablock_ids
 
     def get_content_block_ids(self, ) -> list[str]:
         """Get the IDs of all MutaBlocks."""
 
         content_version_ids = []
-        for block_id in self.base_blockchain.block_ids:
-            topics = decode_short_id(block_id)["topics"]
+        for block_id in self.base_blockchain.blocks:
+            block = self.base_blockchain.blocks[block_id]
+            topics = block.topics
             if len(topics) >= 1 and topics[0] in BLOCK_TYPES:
-                content_version_ids.append(block_id)
+                content_version_ids.append(block.long_id)
         return content_version_ids
     # Delete a mutablock.MutaBlock.ContentVersion from the database based on its id
 

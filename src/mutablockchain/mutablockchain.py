@@ -14,6 +14,7 @@ from .mutablock import (
     UPDATE_BLOCK,
     ContentVersion,
     MutaBlock,
+    MutaBlocksList,
 )
 from loguru import logger
 
@@ -23,7 +24,7 @@ class MutaBlockchain(BlockStore, GenericBlockchain):
 
     def __init__(
         self,
-        base_blockchain: bytearray | bytes,
+        base_blockchain: GenericBlockchain,
         block_received_handler: Callable[[Block], None] | None = None,
         auto_load_missed_blocks: bool = True,
         forget_appdata: bool = False,
@@ -34,6 +35,7 @@ class MutaBlockchain(BlockStore, GenericBlockchain):
         #     "MutaBlockchains",
         #     blockchain_id
         # )
+        self._blocks = MutaBlocksList(self, MutaBlock)
         BlockStore.__init__(self)
         self.init_blockstore()
 
@@ -43,6 +45,10 @@ class MutaBlockchain(BlockStore, GenericBlockchain):
         # self.base_blockchain.load_missed_blocks(
         #     walytis_beta_api.blockchain_model.N_STARTUP_BLOCKS
         # )
+
+    @property
+    def blocks(self) -> MutaBlocksList[MutaBlock]:
+        return self._blocks
 
     def add_block(
         self, content: bytes | bytearray, topics: list[str] | str = ""
@@ -115,6 +121,7 @@ class MutaBlockchain(BlockStore, GenericBlockchain):
             parent_id = bytearray()
             original_id = block.short_id
             user_topics = block.topics[1:]
+            self._blocks.add_block(MutaBlock(block, self))
         elif (len(block.topics) >= 2
               and block.topics[0] in {UPDATE_BLOCK, DELETION_BLOCK}):
             parent_id = string_to_bytes(block.topics[1])
@@ -135,10 +142,6 @@ class MutaBlockchain(BlockStore, GenericBlockchain):
 
     def get_peers(self) -> list[str]:
         return self.base_blockchain.get_peers()
-
-    @property
-    def block_ids(self):
-        return self.base_blockchain.block_ids
 
     @property
     def blockchain_id(self):

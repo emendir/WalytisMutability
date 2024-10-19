@@ -25,6 +25,7 @@ def _on_block_received(block):
 
 def test_prepare():
     if "MutablocksTest" in waly.list_blockchain_names():
+        print("Deleting mutablockchain...")
         waly.delete_blockchain("MutablocksTest")
 
 

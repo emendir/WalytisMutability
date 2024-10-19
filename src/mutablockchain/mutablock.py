@@ -1,7 +1,10 @@
+from __future__ import annotations
+from typing import Generic, Type, TypeVar
 from decorate_all import decorate_all_functions
 from strict_typing import strictly_typed
 from dataclasses import dataclass
 from datetime import datetime
+from walytis_beta_api import BlocksList, BlockNotFoundError
 from walytis_beta_api.generic_blockchain import GenericBlock
 from .mutablockchain import Blockchain
 from brenthy_tools_beta.utils import bytes_to_string
@@ -18,6 +21,11 @@ class MutaBlock(GenericBlock):
     def __init__(self, base_block: GenericBlock, mutablockchain: Blockchain):
         self.mutablockchain: Blockchain = mutablockchain
         self.base_block = base_block
+
+    @classmethod
+    def from_id(cls, block_id: bytearray, mutablockchain: Blockchain) -> MutaBlock:
+        block = mutablockchain.get_block(block_id)
+        return cls(block, mutablockchain)
 
     def get_content_versions(self):
         return self.mutablockchain.get_mutablock_content_versions(self.short_id)
@@ -84,6 +92,26 @@ class ContentVersion:
     content: bytearray | bytes
     timestamp: datetime
     topics: list[str]
+
+
+# a type variable restricted to subclasses of Block
+BlockType = TypeVar('BlockType', bound=MutaBlock)
+
+
+class MutaBlocksList(BlocksList[BlockType]):
+    def __init__(self, blockchain: Blockchain, block_class: Type[BlockType] = MutaBlock):
+        BlocksList.__init__(self, block_class)
+        self.blockchain = blockchain
+
+    def __getitem__(self,  block_id: bytes) -> BlockType:
+        try:
+            block: BlockType = dict.__getitem__(self, block_id)
+        except KeyError:
+            BlockNotFoundError()
+        if not block:
+            block = self.block_class.from_id(bytearray(block_id), self.blockchain)
+            dict.__setitem__(self, block_id, block)
+        return block
 
 
 decorate_all_functions(strictly_typed, __name__)
