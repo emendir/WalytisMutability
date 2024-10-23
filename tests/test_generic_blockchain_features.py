@@ -1,3 +1,4 @@
+import _testing_utils
 from walytis_beta_api.generic_blockchain_testing import test_generic_blockchain
 from walytis_beta_api import Blockchain
 from mutablockchain import MutaBlockchain

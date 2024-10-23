@@ -46,8 +46,8 @@ class BlockStore(ABC):
         """Get the content versions of the specified MutaBlock."""
         content_version_ids = [mutablock_id]
         mutablock_id_str = bytes_to_string(mutablock_id)
-        for block_id in self.base_blockchain.blocks:
-            block = self.base_blockchain.blocks[block_id]
+        for block_id in self.base_blockchain._blocks:
+            block = self.base_blockchain._blocks[block_id]
             topics = block.topics
             if (
                 len(topics) >= 2
@@ -72,8 +72,8 @@ class BlockStore(ABC):
     def get_mutablock_ids(self, ) -> list[str]:
         """Get the IDs of all MutaBlocks."""
         mutablock_ids = []
-        for block_id in self.base_blockchain.blocks:
-            block = self.base_blockchain.blocks[block_id]
+        for block_id in self.base_blockchain._blocks:
+            block = self.base_blockchain._blocks[block_id]
             topics = block.topics
             if len(topics) >= 1 and topics[0] == ORIGINAL_BLOCK:
                 mutablock_ids.append(block.long_id)
@@ -83,8 +83,8 @@ class BlockStore(ABC):
         """Get the IDs of all MutaBlocks."""
 
         content_version_ids = []
-        for block_id in self.base_blockchain.blocks:
-            block = self.base_blockchain.blocks[block_id]
+        for block_id in self.base_blockchain._blocks:
+            block = self.base_blockchain._blocks[block_id]
             topics = block.topics
             if len(topics) >= 1 and topics[0] in BLOCK_TYPES:
                 content_version_ids.append(block.long_id)

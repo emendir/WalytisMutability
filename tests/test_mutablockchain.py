@@ -55,7 +55,7 @@ def test_create_mutablock():
     block = m_blockchain.add_block(content)
     print("Created mutablock.")
     mark(
-        m_blockchain.get_block(block.short_id).current_content_version(
+        m_blockchain.get_block(block.long_id).current_content_version(
         ).content == block.current_content_version().content == content,
         "Mutablock creation"
     )
@@ -66,8 +66,9 @@ def test_update_mutablock():
     updated_content = "Hello there!".encode()
     block.edit(updated_content)
     print("Updated mutablock, checking...")
-    mark(m_blockchain.get_block(
-        block.short_id).current_content_version().content == block.current_content_version().content == updated_content,
+    mark(
+        m_blockchain.get_block(block.long_id).current_content_version().content
+        == block.current_content_version().content == updated_content,
         "Mutablock update"
     )
 

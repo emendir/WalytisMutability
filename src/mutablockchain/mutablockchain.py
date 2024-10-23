@@ -35,20 +35,20 @@ class MutaBlockchain(BlockStore, GenericBlockchain):
         #     "MutaBlockchains",
         #     blockchain_id
         # )
-        self._blocks = MutaBlocksList(self, MutaBlock)
+        self.base_blockchain = base_blockchain
+        block_ids = [
+            bytes(block.long_id) for block in self.base_blockchain._blocks.get_blocks()
+            if block.topics[0] == ORIGINAL_BLOCK
+        ]
+        self._blocks = MutaBlocksList.from_block_ids(block_ids, self, MutaBlock)
         BlockStore.__init__(self)
         self.init_blockstore()
 
         self.block_received_handler = block_received_handler
-        self.base_blockchain = base_blockchain
         self.base_blockchain.block_received_handler = self._on_block_received
         # self.base_blockchain.load_missed_blocks(
         #     walytis_beta_api.blockchain_model.N_STARTUP_BLOCKS
         # )
-
-    @property
-    def blocks(self) -> MutaBlocksList[MutaBlock]:
-        return self._blocks
 
     def add_block(
         self, content: bytes | bytearray, topics: list[str] | str = ""
@@ -89,8 +89,22 @@ class MutaBlockchain(BlockStore, GenericBlockchain):
         )
         self._on_block_received(block)
 
-    def get_block(self, id: bytearray | bytes) -> MutaBlock:
-        return MutaBlock(self.base_blockchain.get_block(id), self)
+    # def get_block(self, id: bytearray | bytes) -> MutaBlock:
+    #     return MutaBlock(self.base_blockchain.get_block(id), self)
+
+    def get_block(self, block_id: bytearray | bytes | int) -> MutaBlock:
+        if isinstance(block_id, int):
+            block_id = self.get_block_ids()[block_id]
+        return self._blocks.get_block(bytes(block_id))
+
+    def get_blocks(self) -> list[MutaBlock]:
+        return self._blocks.get_blocks()
+
+    def get_block_ids(self) -> list[bytes]:
+        return self._blocks.get_long_ids()
+
+    def get_num_blocks(self) -> int:
+        return len(self._blocks)
 
     def _on_block_received(self, block: walytis_beta_api.Block) -> None:  # pylint: disable=no-self-argument
         # logger.debug("OBR: Received block!")
