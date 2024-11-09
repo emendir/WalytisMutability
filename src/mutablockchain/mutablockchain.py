@@ -6,7 +6,7 @@ from brenthy_tools_beta.utils import bytes_to_string, string_to_bytes
 from decorate_all import decorate_all_functions
 from strict_typing import strictly_typed
 from walytis_beta_api import Block, Blockchain
-from walytis_beta_api.generic_blockchain import GenericBlock, GenericBlockchain
+from walytis_beta_api._experimental.generic_blockchain import GenericBlock, GenericBlockchain
 from .blockstore import BlockStore
 from .mutablock import (
     DELETION_BLOCK,

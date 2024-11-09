@@ -4,8 +4,8 @@ from decorate_all import decorate_all_functions
 from strict_typing import strictly_typed
 from dataclasses import dataclass
 from datetime import datetime
-from walytis_beta_api import BlocksList, BlockNotFoundError
-from walytis_beta_api.generic_blockchain import GenericBlockchain, GenericBlock
+from walytis_beta_api._experimental.block_lazy_loading import BlocksList, BlockNotFoundError
+from walytis_beta_api._experimental.generic_blockchain import GenericBlockchain, GenericBlock
 from brenthy_tools_beta.utils import bytes_to_string
 
 ORIGINAL_BLOCK = "MutaBlock-Original"
