@@ -164,8 +164,8 @@ class MutaBlockchain(BlockStore, GenericBlockchain):
     def delete(self) -> None:
         self.base_blockchain.delete()
 
-    def terminate(self) -> None:
-        self.base_blockchain.terminate()
+    def terminate(self, **kwargs) -> None:
+        self.base_blockchain.terminate(**kwargs)
 
     def __del__(self) -> None:
         self.terminate()
