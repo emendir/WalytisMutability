@@ -130,8 +130,8 @@ class MutaBlockchain(BlockStore, GenericBlockchain):
     def decode_base_block(self, block: Block) -> ContentVersion:
         timestamp = block.creation_time
 
-        logger.debug(f"OBR: {block.topics}")
-        logger.debug(f"OBR: {type(block)}")
+        # logger.debug(f"OBR: {block.topics}")
+        # logger.debug(f"OBR: {type(block)}")
         # breakpoint()
         if len(block.topics) >= 1 and block.topics[0] == ORIGINAL_BLOCK:
             parent_id = bytearray()

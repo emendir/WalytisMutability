@@ -32,7 +32,7 @@ class MutaBlock(GenericBlock):
     def get_content_version_ids(self):
         return self.mutablockchain.get_mutablock_content_version_ids(self.long_id)
 
-    def current_content_version(self) -> dict:
+    def get_current_content_version(self) -> dict:
         """Get the compilation of the multiple ContentVersion's content."""
         return self.get_content_versions()[-1]
 
@@ -71,7 +71,7 @@ class MutaBlock(GenericBlock):
 
     @property
     def content(self):
-        return self.base_block.content
+        return self.get_current_content_version().content
 
     @property
     def parents(self):
