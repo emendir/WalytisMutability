@@ -53,8 +53,10 @@ class MutaBlockchain(BlockStore, GenericBlockchain):
     def add_block(
         self, content: bytes | bytearray, topics: list[str] | str = ""
     ) -> MutaBlock:
-        if isinstance(topics, str):
+        if topics == "" or topics is None:
             topics = []
+        elif isinstance(topics, str) or topics is None:
+            topics = [topics]
         topics = [ORIGINAL_BLOCK] + topics
         block = self.base_blockchain.add_block(
             content,
@@ -97,8 +99,8 @@ class MutaBlockchain(BlockStore, GenericBlockchain):
             block_id = self.get_block_ids()[block_id]
         return self._blocks.get_block(bytes(block_id))
 
-    def get_blocks(self) -> list[MutaBlock]:
-        return self._blocks.get_blocks()
+    def get_blocks(self, reverse:bool=False) -> list[MutaBlock]:
+        return self._blocks.get_blocks(reverse=reverse)
 
     def get_block_ids(self) -> list[bytes]:
         return self._blocks.get_long_ids()
@@ -109,7 +111,7 @@ class MutaBlockchain(BlockStore, GenericBlockchain):
     def _on_block_received(self, block: walytis_beta_api.Block) -> None:  # pylint: disable=no-self-argument
         # logger.debug("OBR: Received block!")
         block_id = bytes_to_string(
-            block.short_id)    # pylint: disable=no-member
+            block.long_id)    # pylint: disable=no-member
         # logger.debug("OBR: Checking known blocks...")
         if block_id in self.get_content_block_ids():
             # logger.debug("OBR: We already have that block")
@@ -133,7 +135,7 @@ class MutaBlockchain(BlockStore, GenericBlockchain):
         # breakpoint()
         if len(block.topics) >= 1 and block.topics[0] == ORIGINAL_BLOCK:
             parent_id = bytearray()
-            original_id = block.short_id
+            original_id = block.long_id
             user_topics = block.topics[1:]
             self._blocks.add_block(MutaBlock(block, self))
         elif (len(block.topics) >= 2
@@ -146,7 +148,7 @@ class MutaBlockchain(BlockStore, GenericBlockchain):
         # logger.debug("OBR: Adding mutablock...")
         return ContentVersion(
             type=block.topics[0],
-            cv_id=block.short_id,
+            cv_id=block.long_id,
             parent_id=parent_id,
             original_id=original_id,
             content=block.content,

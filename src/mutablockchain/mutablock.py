@@ -27,10 +27,10 @@ class MutaBlock(GenericBlock):
         return cls(block, mutablockchain)
 
     def get_content_versions(self):
-        return self.mutablockchain.get_mutablock_content_versions(self.short_id)
+        return self.mutablockchain.get_mutablock_content_versions(self.long_id)
 
     def get_content_version_ids(self):
-        return self.mutablockchain.get_mutablock_content_version_ids(self.short_id)
+        return self.mutablockchain.get_mutablock_content_version_ids(self.long_id)
 
     def current_content_version(self) -> dict:
         """Get the compilation of the multiple ContentVersion's content."""
