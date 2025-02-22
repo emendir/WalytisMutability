@@ -5,8 +5,13 @@ from strict_typing import strictly_typed
 from dataclasses import dataclass
 from datetime import datetime
 from walytis_beta_api._experimental.block_lazy_loading import BlocksList, BlockNotFoundError
-from walytis_beta_api._experimental.generic_blockchain import GenericBlockchain, GenericBlock
+from walytis_beta_api._experimental.generic_blockchain import  GenericBlock
 from brenthy_tools_beta.utils import bytes_to_string
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from .mutablockchain import MutaBlockchain  # Only imported for type checking
+
 
 ORIGINAL_BLOCK = "MutaBlock-Original"
 UPDATE_BLOCK = "MutaBlock-Update"
@@ -17,13 +22,13 @@ BLOCK_TYPES = {ORIGINAL_BLOCK, UPDATE_BLOCK, DELETION_BLOCK}
 
 class MutaBlock(GenericBlock):
 
-    def __init__(self, base_block: GenericBlock, mutablockchain: GenericBlockchain):
-        self.mutablockchain: GenericBlockchain = mutablockchain
+    def __init__(self, base_block: GenericBlock, mutablockchain: 'MutaBlockchain'):
+        self.mutablockchain: 'MutaBlockchain' = mutablockchain
         self.base_block = base_block
 
     @classmethod
-    def from_id(cls, block_id: bytearray, mutablockchain: GenericBlockchain) -> MutaBlock:
-        block = mutablockchain.get_block(block_id)
+    def from_id(cls, block_id: bytearray, mutablockchain: 'MutaBlockchain') -> MutaBlock:
+        block = mutablockchain.base_blockchain.get_block(block_id)
         return cls(block, mutablockchain)
 
     def get_content_versions(self):
@@ -98,7 +103,7 @@ BlockType = TypeVar('BlockType', bound=MutaBlock)
 
 
 class MutaBlocksList(BlocksList[BlockType]):
-    def __init__(self, blockchain: GenericBlockchain, block_class: Type[BlockType] = MutaBlock):
+    def __init__(self, blockchain: 'MutaBlockchain', block_class: Type[BlockType] = MutaBlock):
         BlocksList.__init__(self, block_class)
         self.blockchain = blockchain
 
@@ -106,7 +111,7 @@ class MutaBlocksList(BlocksList[BlockType]):
     def from_block_ids(
         cls: Type['BlocksList[BlockType]'],
         block_ids: list[bytes],
-        blockchain: GenericBlockchain,
+        blockchain: 'MutaBlockchain',
         block_class: Type[BlockType] = MutaBlock
     ) -> 'BlocksList[BlockType]':
 
