@@ -4,8 +4,8 @@ from decorate_all import decorate_all_functions
 from strict_typing import strictly_typed
 from dataclasses import dataclass
 from datetime import datetime
-from walytis_beta_api._experimental.block_lazy_loading import BlocksList, BlockNotFoundError
-from walytis_beta_api._experimental.generic_blockchain import  GenericBlock
+from walytis_beta_tools._experimental.block_lazy_loading import BlocksList, BlockNotFoundError
+from walytis_beta_embedded._walytis_beta.walytis_beta_api._experimental.generic_blockchain import  GenericBlock
 from brenthy_tools_beta.utils import bytes_to_string
 from typing import TYPE_CHECKING
 
@@ -22,14 +22,14 @@ BLOCK_TYPES = {ORIGINAL_BLOCK, UPDATE_BLOCK, DELETION_BLOCK}
 
 class MutaBlock(GenericBlock):
 
-    def __init__(self, base_block: GenericBlock, mutablockchain: 'MutaBlockchain'):
-        self.mutablockchain: 'MutaBlockchain' = mutablockchain
+    def __init__(self, base_block: GenericBlock, walytis_mutability: 'MutaBlockchain'):
+        self.mutablockchain: 'MutaBlockchain' = walytis_mutability
         self.base_block = base_block
 
     @classmethod
-    def from_id(cls, block_id: bytearray, mutablockchain: 'MutaBlockchain') -> MutaBlock:
-        block = mutablockchain.base_blockchain.get_block(block_id)
-        return cls(block, mutablockchain)
+    def from_id(cls, block_id: bytearray, walytis_mutability: 'MutaBlockchain') -> MutaBlock:
+        block = walytis_mutability.base_blockchain.get_block(block_id)
+        return cls(block, walytis_mutability)
 
     def get_content_versions(self):
         return self.mutablockchain.get_mutablock_content_versions(self.long_id)

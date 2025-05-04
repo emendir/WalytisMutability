@@ -7,4 +7,4 @@ except ValueError:
 logger.add(sys.stdout, format="<level>{message}</level>")
 
 
-logger.add("mutablock.log", rotation="1 week")
+# logger.add("mutablock.log", rotation="1 week")

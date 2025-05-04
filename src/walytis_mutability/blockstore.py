@@ -6,9 +6,8 @@ import os
 import sqlite3
 from abc import ABC, abstractmethod
 from brenthy_tools_beta.utils import string_to_time, time_to_string, bytes_to_string
-from walytis_beta_api import Block, decode_short_id
+from walytis_beta_embedded._walytis_beta.walytis_beta_api import Block, decode_short_id
 from .mutablock import ORIGINAL_BLOCK, ContentVersion, BLOCK_TYPES
-from .threaded_object import DedicatedThreadClass, run_on_dedicated_thread
 from .utils import logger
 TIME_FORMAT = '%Y.%m.%d_%H.%M.%S.%f'
 
@@ -110,7 +109,6 @@ class BlockStore(ABC):
 
     def terminate(self) -> None:
         self.db.close()
-        DedicatedThreadClass.terminate(self)
 
     def __del__(self) -> None:
         self.terminate()

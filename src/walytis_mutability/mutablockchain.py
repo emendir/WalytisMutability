@@ -1,12 +1,12 @@
 """A virtual Blockchain with mutable blocks."""
 from typing import Callable
 
-import walytis_beta_api
+import walytis_beta_embedded._walytis_beta.walytis_beta_api
 from brenthy_tools_beta.utils import bytes_to_string, string_to_bytes
 from decorate_all import decorate_all_functions
 from strict_typing import strictly_typed
-from walytis_beta_api import Block, Blockchain
-from walytis_beta_api._experimental.generic_blockchain import GenericBlock, GenericBlockchain
+from walytis_beta_embedded._walytis_beta.walytis_beta_api import Block, Blockchain
+from walytis_beta_embedded._walytis_beta.walytis_beta_api._experimental.generic_blockchain import GenericBlock, GenericBlockchain
 from .blockstore import BlockStore
 from .mutablock import (
     DELETION_BLOCK,
@@ -40,14 +40,16 @@ class MutaBlockchain(BlockStore, GenericBlockchain):
             bytes(block.long_id) for block in self.base_blockchain._blocks.get_blocks()
             if block.topics[0] == ORIGINAL_BLOCK
         ]
+        
         self._blocks = MutaBlocksList.from_block_ids(block_ids, self, MutaBlock)
+        logger.debug(f"MB INIT: {[b.content for b in self._blocks.get_blocks()]}")
         BlockStore.__init__(self)
         self.init_blockstore()
 
         self.block_received_handler = block_received_handler
         self.base_blockchain.block_received_handler = self._on_block_received
         # self.base_blockchain.load_missed_blocks(
-        #     walytis_beta_api.blockchain_model.N_STARTUP_BLOCKS
+        #     walytis_beta_embedded._walytis_beta.walytis_beta_api.blockchain_model.N_STARTUP_BLOCKS
         # )
 
     def add_block(
@@ -74,6 +76,7 @@ class MutaBlockchain(BlockStore, GenericBlockchain):
         if isinstance(parent_id, (bytearray, bytes)):
             parent_id = bytes_to_string(parent_id)
         topics = [UPDATE_BLOCK, parent_id]
+        print("Adding block...")
         block = self.base_blockchain.add_block(
             content,
             topics=topics
@@ -108,22 +111,22 @@ class MutaBlockchain(BlockStore, GenericBlockchain):
     def get_num_blocks(self) -> int:
         return len(self._blocks)
 
-    def _on_block_received(self, block: walytis_beta_api.Block) -> None:  # pylint: disable=no-self-argument
-        # logger.debug("OBR: Received block!")
+    def _on_block_received(self, block: walytis_beta_embedded._walytis_beta.walytis_beta_api.Block) -> None:  # pylint: disable=no-self-argument
+        logger.debug("OBR: Received block!")
         block_id = bytes_to_string(
             block.long_id)    # pylint: disable=no-member
-        # logger.debug("OBR: Checking known blocks...")
+        logger.debug("OBR: Checking known blocks...")
         if block_id in self.get_content_block_ids():
-            # logger.debug("OBR: We already have that block")
+            logger.debug("OBR: We already have that block")
             return
-        # logger.debug("OBR: loading block details...")
+        logger.debug("OBR: loading block details...")
         try:
             content_version = self.decode_base_block(block)
         except NotContentVersionBlockError:
             return
         self.add_content_version(content_version)
 
-        # logger.debug("OBR: Finished processing received block.")
+        logger.debug("OBR: Finished processing received block.")
         if self.block_received_handler:
             self.block_received_handler(block)
 

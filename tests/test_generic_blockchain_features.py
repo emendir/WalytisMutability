@@ -1,7 +1,7 @@
 import _testing_utils
-from walytis_beta_api._experimental.generic_blockchain_testing import test_generic_blockchain
-from walytis_beta_api import Blockchain
-from mutablockchain import MutaBlockchain
+from walytis_beta_embedded._walytis_beta.walytis_beta_api._experimental.generic_blockchain_testing import test_generic_blockchain
+from walytis_beta_embedded._walytis_beta.walytis_beta_api import Blockchain
+from walytis_mutability import MutaBlockchain
 
 
 def test_generic_blockchain_features():

@@ -4,14 +4,14 @@ from decorate_all import decorate_all_functions
 import os
 
 import _testing_utils
-import mutablockchain
-import walytis_beta_api as waly
+import walytis_mutability
+import walytis_beta_embedded._walytis_beta.walytis_beta_api as waly
 from _testing_utils import mark, test_threads_cleanup
-from mutablockchain import MutaBlock, MutaBlockchain
-from walytis_beta_api import Blockchain
+from walytis_mutability import MutaBlock, MutaBlockchain
+from walytis_beta_embedded._walytis_beta.walytis_beta_api import Blockchain
 
 _testing_utils.assert_is_loaded_from_source(
-    source_dir=os.path.dirname(os.path.dirname(__file__)), module=mutablockchain
+    source_dir=os.path.dirname(os.path.dirname(__file__)), module=walytis_mutability
 )
 
 m_blockchain: MutaBlockchain
@@ -25,14 +25,14 @@ def _on_block_received(block):
 
 def test_prepare():
     if "MutablocksTest" in waly.list_blockchain_names():
-        print("Deleting mutablockchain...")
+        print("Deleting walytis_mutability...")
         waly.delete_blockchain("MutablocksTest")
 
 
 def test_create_mutablockchain():
     global m_blockchain
     global base_blockchain
-    print("Creating mutablockchain...")
+    print("Creating walytis_mutability...")
     base_blockchain = Blockchain.create()
     m_blockchain = MutaBlockchain(base_blockchain)
     mark(
@@ -80,7 +80,7 @@ def test_delete_mutablock():
 
 
 def test_delete_mutablockchain():
-    print("Deleting mutablockchain...")
+    print("Deleting walytis_mutability...")
     m_blockchain.delete()
     mark(
         m_blockchain.blockchain_id not in waly.list_blockchain_ids(),
