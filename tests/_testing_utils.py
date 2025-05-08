@@ -12,8 +12,9 @@ BREAKPOINTS = False
 PYTEST = True  # whether or not this script is being run by pytest
 
 USING_BRENTHY = False  # overridden to True in docker container
+WE_ARE_IN_DOCKER=os.path.exists('/.dockerenv')
 
-if os.path.exists("/opt/we_are_in_docker"):
+if WE_ARE_IN_DOCKER:
     USING_BRENTHY = True
 if True:
     print("USING_BRENTHY", USING_BRENTHY)

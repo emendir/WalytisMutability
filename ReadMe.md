@@ -7,3 +7,8 @@ An overlay for the Walytis blockchain that provides the feature of mutable block
 This library is very early in its development.
 
 The API of this library IS LIKELY TO CHANGE in the near future!
+
+
+For more info, see:
+- https://github.com/emendir/Endra
+- https://github.com/emendir/BrenthyAndWalytis
