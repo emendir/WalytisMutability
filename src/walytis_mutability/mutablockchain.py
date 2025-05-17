@@ -1,12 +1,12 @@
 """A virtual Blockchain with mutable blocks."""
 from typing import Callable
 
-import walytis_beta_embedded._walytis_beta.walytis_beta_api
+import walytis_beta_api
 from brenthy_tools_beta.utils import bytes_to_string, string_to_bytes
 from decorate_all import decorate_all_functions
 from strict_typing import strictly_typed
-from walytis_beta_embedded._walytis_beta.walytis_beta_api import Block, Blockchain
-from walytis_beta_embedded._walytis_beta.walytis_beta_api._experimental.generic_blockchain import GenericBlock, GenericBlockchain
+from walytis_beta_api import Block, Blockchain
+from walytis_beta_api._experimental.generic_blockchain import GenericBlock, GenericBlockchain
 from .blockstore import BlockStore
 from .mutablock import (
     DELETION_BLOCK,
@@ -49,7 +49,7 @@ class MutaBlockchain(BlockStore, GenericBlockchain):
         self.block_received_handler = block_received_handler
         self.base_blockchain.block_received_handler = self._on_block_received
         # self.base_blockchain.load_missed_blocks(
-        #     walytis_beta_embedded._walytis_beta.walytis_beta_api.blockchain_model.N_STARTUP_BLOCKS
+        #     walytis_beta_api.blockchain_model.N_STARTUP_BLOCKS
         # )
 
     def add_block(
@@ -111,7 +111,7 @@ class MutaBlockchain(BlockStore, GenericBlockchain):
     def get_num_blocks(self) -> int:
         return len(self._blocks)
 
-    def _on_block_received(self, block: walytis_beta_embedded._walytis_beta.walytis_beta_api.Block) -> None:  # pylint: disable=no-self-argument
+    def _on_block_received(self, block: walytis_beta_api.Block) -> None:  # pylint: disable=no-self-argument
         logger.debug("OBR: Received block!")
         block_id = bytes_to_string(
             block.long_id)    # pylint: disable=no-member

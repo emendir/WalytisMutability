@@ -5,10 +5,10 @@ import os
 
 import _testing_utils
 import walytis_mutability
-import walytis_beta_embedded._walytis_beta.walytis_beta_api as waly
+import walytis_beta_api as waly
 from _testing_utils import mark, test_threads_cleanup
 from walytis_mutability import MutaBlock, MutaBlockchain
-from walytis_beta_embedded._walytis_beta.walytis_beta_api import Blockchain
+from walytis_beta_api import Blockchain
 
 _testing_utils.assert_is_loaded_from_source(
     source_dir=os.path.dirname(os.path.dirname(__file__)), module=walytis_mutability

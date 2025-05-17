@@ -5,7 +5,7 @@ from strict_typing import strictly_typed
 from dataclasses import dataclass
 from datetime import datetime
 from walytis_beta_tools._experimental.block_lazy_loading import BlocksList, BlockNotFoundError
-from walytis_beta_embedded._walytis_beta.walytis_beta_api._experimental.generic_blockchain import  GenericBlock
+from walytis_beta_api._experimental.generic_blockchain import  GenericBlock
 from brenthy_tools_beta.utils import bytes_to_string
 from typing import TYPE_CHECKING
 
