@@ -16,8 +16,7 @@ from .mutablock import (
     MutaBlock,
     MutaBlocksList,
 )
-from loguru import logger
-
+from .utils import logger
 
 class MutaBlockchain(BlockStore, GenericBlockchain):
     block_received_handler: Callable[[GenericBlock], None] | None = None
