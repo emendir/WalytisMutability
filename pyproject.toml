@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 dynamic = ["dependencies"]
 name = "walytis_mutability"
 authors = [{ name = "emendir" }]
-version = "0.1.3"
+version = "0.1.4"
 description = "An overlay for the Walytis blockchain that provides the feature of mutable blocks."
 readme = {file = "ReadMe.md", content-type = "text/markdown"}
 
