@@ -1,0 +1,3 @@
+decorate_all
+walytis_beta_api
+walytis_beta_embedded
