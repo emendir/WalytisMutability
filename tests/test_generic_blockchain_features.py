@@ -1,5 +1,5 @@
-import _testing_utils
-from walytis_beta_api._experimental.generic_blockchain_testing import test_generic_blockchain
+import _auto_run_with_pytest
+from walytis_beta_api._experimental.generic_blockchain_testing import run_generic_blockchain_test
 from walytis_beta_api import Blockchain
 from walytis_mutability import MutaBlockchain
 
@@ -8,13 +8,6 @@ def test_generic_blockchain_features():
 
     blockchain = Blockchain.create()
 
-    test_generic_blockchain(MutaBlockchain, base_blockchain=blockchain)
+    run_generic_blockchain_test(MutaBlockchain, base_blockchain=blockchain)
     blockchain.delete()
 
-
-def run_tests():
-    test_generic_blockchain_features()
-
-
-if __name__ == "__main__":
-    run_tests()

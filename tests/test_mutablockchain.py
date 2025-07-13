@@ -1,18 +1,14 @@
+import _auto_run_with_pytest
 
 from strict_typing import strictly_typed
 from decorate_all import decorate_all_functions
 import os
 
-import _testing_utils
 import walytis_mutability
 import walytis_beta_api as waly
-from _testing_utils import mark, test_threads_cleanup
 from walytis_mutability import MutaBlock, MutaBlockchain
 from walytis_beta_api import Blockchain
 
-_testing_utils.assert_is_loaded_from_source(
-    source_dir=os.path.dirname(os.path.dirname(__file__)), module=walytis_mutability
-)
 
 m_blockchain: MutaBlockchain
 block_id: bytearray | bytes
@@ -35,10 +31,7 @@ def test_create_mutablockchain():
     print("Creating walytis_mutability...")
     base_blockchain = Blockchain.create()
     m_blockchain = MutaBlockchain(base_blockchain)
-    mark(
-        m_blockchain.blockchain_id in waly.list_blockchain_ids(),
-        "Create Mutablockchain"
-    )
+    assert  m_blockchain.blockchain_id in waly.list_blockchain_ids(), "Create Mutablockchain"
 
 
 def test_create_mutablock():
@@ -54,11 +47,7 @@ def test_create_mutablock():
     print("Creating mutablock...")
     block = m_blockchain.add_block(content)
     print("Created mutablock.")
-    mark(
-        m_blockchain.get_block(block.long_id).get_current_content_version(
-        ).content == block.get_current_content_version().content == content,
-        "Mutablock creation"
-    )
+    assert  m_blockchain.get_block(block.long_id).get_current_content_version().content == block.get_current_content_version().content == content, "Mutablock creation"
 
 
 def test_update_mutablock():
@@ -66,11 +55,7 @@ def test_update_mutablock():
     updated_content = "Hello there!".encode()
     block.edit(updated_content)
     print("Updated mutablock, checking...")
-    mark(
-        m_blockchain.get_block(block.long_id).get_current_content_version().content
-        == block.get_current_content_version().content == updated_content,
-        "Mutablock update"
-    )
+    assert  m_blockchain.get_block(block.long_id).get_current_content_version().content == block.get_current_content_version().content == updated_content, "Mutablock update"
 
 
 def test_delete_mutablock():
@@ -82,16 +67,13 @@ def test_delete_mutablock():
 def test_delete_mutablockchain():
     print("Deleting walytis_mutability...")
     m_blockchain.delete()
-    mark(
-        m_blockchain.blockchain_id not in waly.list_blockchain_ids(),
-        "Delete Mutablockchain"
-    )
+    assert  m_blockchain.blockchain_id not in waly.list_blockchain_ids(), "Delete Mutablockchain"
 
-
+from emtest import await_thread_cleanup
 def test_cleanup():
     print("Cleaning up...")
     m_blockchain.terminate()
-    test_threads_cleanup()
+    assert await_thread_cleanup()
 
 
 def run_tests():
@@ -104,8 +86,3 @@ def run_tests():
     test_cleanup()
 
 
-if __name__ == "__main__":
-    _testing_utils.PYTEST = False
-    run_tests()
-
-decorate_all_functions(strictly_typed, __name__)
