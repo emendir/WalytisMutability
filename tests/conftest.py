@@ -1,3 +1,5 @@
+
+
 """Script for configuring tests.
 
 Runs automatically when pytest runs a test before loading the test module.
@@ -51,6 +53,10 @@ if True:
     import walytis_beta_api
     from brenthy_tools_beta import BrenthyNotRunningError
     import walytis_mutability
+    from brenthy_tools_beta import brenthy_api
+    def assert_brenthy_online(timeout: int = 2) -> None:
+        """Check if Brenthy is reachable, raising an error if not."""
+        brenthy_api.get_brenthy_version(timeout=timeout)
     # walytis_beta_tools.log.logger_blockchain_model.setLevel(logging.DEBUG)
     # walytis_beta_tools.log.file_handler.setLevel(logging.DEBUG)
     USING_BRENTHY = walytis_beta_api.walytis_beta_interface.get_walytis_beta_api_type(
@@ -59,7 +65,7 @@ if True:
     if USING_BRENTHY:
         while True:
             try:
-                walytis_beta_api.list_blockchain_names()
+                assert_brenthy_online()
                 break
             except BrenthyNotRunningError as e:
                 logger.error(e)
