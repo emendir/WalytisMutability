@@ -23,12 +23,13 @@ from emtest import (
 
 PRINT_ERRORS = True  # whether or not to print error messages after failed tests
 
-# add source code paths to python's search paths
-PROJ_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-SRC_DIR = os.path.join(
-    PROJ_DIR, "src"
-)
+WORKDIR = os.path.dirname(os.path.abspath(__file__))
+PROJ_DIR = os.path.dirname(WORKDIR)
+SRC_DIR = os.path.join(PROJ_DIR, "src")
 
+os.chdir(WORKDIR)
+
+# add source code paths to python's search paths
 add_path_to_python(SRC_DIR)
 
 
