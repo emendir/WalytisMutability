@@ -1,4 +1,5 @@
 """A virtual Blockchain with mutable blocks."""
+
 from typing import Callable
 
 import walytis_beta_api
@@ -6,7 +7,10 @@ from brenthy_tools_beta.utils import bytes_to_string, string_to_bytes
 from decorate_all import decorate_all_functions
 from strict_typing import strictly_typed
 from walytis_beta_api import Block, Blockchain
-from walytis_beta_api._experimental.generic_blockchain import GenericBlock, GenericBlockchain
+from walytis_beta_api._experimental.generic_blockchain import (
+    GenericBlock,
+    GenericBlockchain,
+)
 from .blockstore import BlockStore
 from .mutablock import (
     DELETION_BLOCK,
@@ -18,6 +22,7 @@ from .mutablock import (
 )
 from .utils import logger
 
+
 class MutaBlockchain(BlockStore, GenericBlockchain):
     block_received_handler: Callable[[GenericBlock], None] | None = None
 
@@ -27,7 +32,7 @@ class MutaBlockchain(BlockStore, GenericBlockchain):
         block_received_handler: Callable[[Block], None] | None = None,
         auto_load_missed_blocks: bool = True,
         forget_appdata: bool = False,
-        sequential_block_handling: bool = True
+        sequential_block_handling: bool = True,
     ):
         # self.db_path = os.path.join(
         #     appdirs.user_data_dir(),
@@ -36,12 +41,14 @@ class MutaBlockchain(BlockStore, GenericBlockchain):
         # )
         self.base_blockchain = base_blockchain
         block_ids = [
-            bytes(block.long_id) for block in self.base_blockchain._blocks.get_blocks()
+            bytes(block.long_id)
+            for block in self.base_blockchain._blocks.get_blocks()
             if block.topics[0] == ORIGINAL_BLOCK
         ]
-        
-        self._blocks = MutaBlocksList.from_block_ids(block_ids, self, MutaBlock)
-        logger.debug(f"MB INIT: {[b.content for b in self._blocks.get_blocks()]}")
+
+        self._blocks = MutaBlocksList.from_block_ids(
+            block_ids, self, MutaBlock
+        )
         BlockStore.__init__(self)
         self.init_blockstore()
 
@@ -59,10 +66,7 @@ class MutaBlockchain(BlockStore, GenericBlockchain):
         elif isinstance(topics, str) or topics is None:
             topics = [topics]
         topics = [ORIGINAL_BLOCK] + topics
-        block = self.base_blockchain.add_block(
-            content,
-            topics
-        )
+        block = self.base_blockchain.add_block(content, topics)
         self._on_block_received(block)
         print("Created mutablock.")
         return MutaBlock(block, self)
@@ -76,10 +80,7 @@ class MutaBlockchain(BlockStore, GenericBlockchain):
             parent_id = bytes_to_string(parent_id)
         topics = [UPDATE_BLOCK, parent_id]
         print("Adding block...")
-        block = self.base_blockchain.add_block(
-            content,
-            topics=topics
-        )
+        block = self.base_blockchain.add_block(content, topics=topics)
         print("Createed update block")
         self._on_block_received(block)
 
@@ -88,8 +89,7 @@ class MutaBlockchain(BlockStore, GenericBlockchain):
             parent_id = parent_id.cv_id
         topics = [DELETION_BLOCK, bytes_to_string(parent_id)]
         block = self.base_blockchain.add_block(
-            content=bytearray([3]),
-            topics=topics
+            content=bytearray([3]), topics=topics
         )
         self._on_block_received(block)
 
@@ -101,7 +101,7 @@ class MutaBlockchain(BlockStore, GenericBlockchain):
             block_id = self.get_block_ids()[block_id]
         return self._blocks.get_block(bytes(block_id))
 
-    def get_blocks(self, reverse:bool=False) -> list[MutaBlock]:
+    def get_blocks(self, reverse: bool = False) -> list[MutaBlock]:
         return self._blocks.get_blocks(reverse=reverse)
 
     def get_block_ids(self) -> list[bytes]:
@@ -112,8 +112,7 @@ class MutaBlockchain(BlockStore, GenericBlockchain):
 
     def _on_block_received(self, block: walytis_beta_api.Block) -> None:  # pylint: disable=no-self-argument
         logger.debug("OBR: Received block!")
-        block_id = bytes_to_string(
-            block.long_id)    # pylint: disable=no-member
+        block_id = bytes_to_string(block.long_id)  # pylint: disable=no-member
         logger.debug("OBR: Checking known blocks...")
         if block_id in self.get_content_block_ids():
             logger.debug("OBR: We already have that block")
@@ -140,8 +139,10 @@ class MutaBlockchain(BlockStore, GenericBlockchain):
             original_id = block.long_id
             user_topics = block.topics[1:]
             self._blocks.add_block(MutaBlock(block, self))
-        elif (len(block.topics) >= 2
-              and block.topics[0] in {UPDATE_BLOCK, DELETION_BLOCK}):
+        elif len(block.topics) >= 2 and block.topics[0] in {
+            UPDATE_BLOCK,
+            DELETION_BLOCK,
+        }:
             parent_id = string_to_bytes(block.topics[1])
             original_id = self.verify_original(parent_id).cv_id
             user_topics = block.topics[2:]
