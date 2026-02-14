@@ -44,6 +44,14 @@ def pytest_configure(config):
         terminal.write_line(f"Python {sys.version.split(' ')[0]}")
 
 
+def pytest_sessionfinish(
+    session: pytest.Session,
+    exitstatus: pytest.ExitCode,
+) -> None:
+    """Clean up after pytest has finished."""
+    os._exit(int(exitstatus))  # force close terminating dangling threads
+
+
 if True:
     # Walytis Config: use Brenthy by default if not otherwise specified by env var
     if are_we_in_docker():

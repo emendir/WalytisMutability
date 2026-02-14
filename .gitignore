@@ -15,5 +15,7 @@ __pycache__
 *.log
 *.bkp
 
+tests/reports
+
 # <<< CLEANUP
 publish.py
