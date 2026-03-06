@@ -19,3 +19,7 @@ tests/reports
 
 # <<< CLEANUP
 publish.py
+
+_hanuki
+hanuki.toml
+index.html

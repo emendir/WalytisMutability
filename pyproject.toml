@@ -8,7 +8,7 @@ name = "walytis_mutability"
 authors = [{ name = "emendir" }]
 version = "0.1.9"
 description = "An overlay for the Walytis blockchain that provides the feature of mutable blocks."
-readme = {file = "ReadMe.md", content-type = "text/markdown"}
+readme = {file = "README.md", content-type = "text/markdown"}
 requires-python = ">=3.10"
 
 [tool.setuptools.dynamic]
