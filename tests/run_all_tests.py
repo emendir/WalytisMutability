@@ -7,40 +7,53 @@ import sys
 
 from emtest import set_env_var, env_vars
 
+TEST_FUNC_TIMEOUT_SEC = 300
+
 WORKDIR = os.path.dirname(__file__)
+os.chdir(WORKDIR)
 
 pytest_args = sys.argv[1:]
+# minimum python version for using extra pytest features
+ADV_PYTEST_PY_VER = (3, 12)
 
 
-TEST_FUNC_TIMEOUT_SEC = 300
-REPORTS_DIR_PREF = env_vars.str(
-    "WALY_TEST_REPORTS_DIR", default=os.path.join("reports", "report-")
+WALY_TEST_REPORTS_DIR = env_vars.str(
+    "WALY_TEST_REPORTS_DIR", default=os.path.join(WORKDIR, "reports")
 )
+REPORTS_DIR_PREF = os.path.join(WALY_TEST_REPORTS_DIR, "report-")
 
 
 def run_tests() -> None:
     """Run each test file with pytest."""
     pytest_args = sys.argv[1:]
     timestamp = datetime.now().strftime("%Y_%m_%d-%H_%M_%S")
-    html_path = os.path.join(REPORTS_DIR_PREF + timestamp, "report.html")
-    json_path = os.path.join(REPORTS_DIR_PREF + timestamp, "report.json")
-    ensure_dir_exists(os.path.dirname(html_path))
-    ensure_dir_exists(os.path.dirname(json_path))
 
     test_files = [
-        os.path.join(WORKDIR, file)
+        (file.strip(".py"), os.path.join(WORKDIR, file))
         for file in os.listdir(WORKDIR)
         if (file.startswith("test_") and file.endswith(".py"))
     ]
     test_files.sort()
-    for test_file in test_files:
-        os.system(
-            f"{sys.executable} -m pytest {test_file} "
-            f"--html={html_path} "
-            f"--json={json_path} "
-            f"--timeout={TEST_FUNC_TIMEOUT_SEC} "
-            f"{' '.join(pytest_args)} "
+    for test_name, test_file in test_files:
+        html_path = os.path.join(
+            REPORTS_DIR_PREF + timestamp, test_name, "report.html"
         )
+        json_path = os.path.join(
+            REPORTS_DIR_PREF + timestamp, test_name, "report.json"
+        )
+        ensure_dir_exists(os.path.dirname(html_path))
+        ensure_dir_exists(os.path.dirname(json_path))
+
+        command = (
+            f"{sys.executable} -m pytest {test_file} {' '.join(pytest_args)} "
+        )
+        if sys.version_info.minor > ADV_PYTEST_PY_VER[1]:
+            command += (
+                f"--html={html_path} "
+                f"--json={json_path} "
+                f"--timeout={TEST_FUNC_TIMEOUT_SEC} "
+            )
+        os.system(command)
 
 
 os.system("sudo systemctl start ipfs brenthy")
