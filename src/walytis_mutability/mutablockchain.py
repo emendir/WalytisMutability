@@ -129,6 +129,7 @@ class MutaBlockchain(BlockStore, GenericBlockchain):
             self.block_received_handler(block)
 
     def decode_base_block(self, block: Block) -> ContentVersion:
+        """Load a ContentVersion object from a block."""
         timestamp = block.creation_time
 
         # logger.debug(f"OBR: {block.topics}")

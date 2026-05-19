@@ -1,15 +1,20 @@
 """The machinery for MutaBlock storage in an SQLite database."""
-from decorate_all import decorate_all_functions
-from strict_typing import strictly_typed
-import json
-import os
-import sqlite3
+
 from abc import ABC, abstractmethod
-from brenthy_tools_beta.utils import string_to_time, time_to_string, bytes_to_string
-from walytis_beta_api import Block, decode_short_id
-from .mutablock import ORIGINAL_BLOCK, ContentVersion, BLOCK_TYPES
-from .utils import logger
-TIME_FORMAT = '%Y.%m.%d_%H.%M.%S.%f'
+
+from brenthy_tools_beta.utils import (  # type: ignore
+    bytes_to_string,
+)
+from decorate_all import decorate_all_functions  # type: ignore
+from strict_typing import strictly_typed  # type: ignore
+from walytis_beta_api import Block, decode_short_id  # type: ignore
+from walytis_beta_api._experimental.generic_blockchain import (
+    GenericBlockchain,
+)
+
+from .mutablock import BLOCK_TYPES, ORIGINAL_BLOCK, ContentVersion
+
+TIME_FORMAT = "%Y.%m.%d_%H.%M.%S.%f"
 
 
 class BlockStore(ABC):
@@ -17,8 +22,11 @@ class BlockStore(ABC):
 
     db_path = "content_versions.db"
 
+    base_blockchain: GenericBlockchain  # noqa: F842
+
     @abstractmethod
     def decode_base_block(self, block: Block) -> ContentVersion:
+        """Load a ContentVersion object from a block."""
         pass
 
     def init_blockstore(self) -> None:
@@ -43,14 +51,15 @@ class BlockStore(ABC):
         self, mutablock_id: bytearray | bytes
     ) -> list[bytearray]:
         """Get the content versions of the specified MutaBlock."""
-        content_version_ids = [mutablock_id]
+        content_version_ids = [bytearray(mutablock_id)]
         mutablock_id_str = bytes_to_string(mutablock_id)
         for block_id in self.base_blockchain._blocks:
             block = self.base_blockchain._blocks[block_id]
             topics = block.topics
             if (
                 len(topics) >= 2
-                and topics[0] in BLOCK_TYPES and topics[1] == mutablock_id_str
+                and topics[0] in BLOCK_TYPES
+                and topics[1] == mutablock_id_str
             ):
                 content_version_ids.append(block.long_id)
         content_version_ids.sort(
@@ -61,14 +70,17 @@ class BlockStore(ABC):
     def get_mutablock_content_versions(
         self, mutablock_id: bytearray | bytes
     ) -> list[ContentVersion]:
+        """Get all ContentVersions of the specified block."""
         return [
-            self.decode_base_block(
-                self.base_blockchain.get_block(block_id)
+            self.decode_base_block(self.base_blockchain.get_block(block_id))
+            for block_id in self.get_mutablock_content_version_ids(
+                mutablock_id
             )
-            for block_id in self.get_mutablock_content_version_ids(mutablock_id)
         ]
 
-    def get_mutablock_ids(self, ) -> list[str]:
+    def get_mutablock_ids(
+        self,
+    ) -> list[str]:
         """Get the IDs of all MutaBlocks."""
         mutablock_ids = []
         for block_id in self.base_blockchain._blocks:
@@ -78,9 +90,10 @@ class BlockStore(ABC):
                 mutablock_ids.append(block.long_id)
         return mutablock_ids
 
-    def get_content_block_ids(self, ) -> list[str]:
+    def get_content_block_ids(
+        self,
+    ) -> list[str]:
         """Get the IDs of all MutaBlocks."""
-
         content_version_ids = []
         for block_id in self.base_blockchain._blocks:
             block = self.base_blockchain._blocks[block_id]
@@ -88,13 +101,14 @@ class BlockStore(ABC):
             if len(topics) >= 1 and topics[0] in BLOCK_TYPES:
                 content_version_ids.append(block.long_id)
         return content_version_ids
-    # Delete a mutablock.MutaBlock.ContentVersion from the database based on its id
 
-    def verify_original(self, contentv_id: bytearray | bytes) -> ContentVersion:
+    def verify_original(
+        self, contentv_id: bytearray | bytes
+    ) -> ContentVersion:
         """Verify the consistency of a ContentVersion's chain of parents.
 
-        Verifies if the original_id of the chain of parents of a content_version
-        are consistent. Raises an exception if not,
+        Verifies if the original_id of the chain of parents of a
+        content_version are consistent. Raises an exception if not,
         returns the original content_version object if yes.
         """
         # logger.debug(f"Verifying original:\n{contentv_id}")
