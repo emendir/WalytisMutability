@@ -61,11 +61,9 @@ if True:
         "WALYTIS_BETA_API_TYPE", "WALYTIS_BETA_BRENTHY_API", override=False
     )
 
-    set_env_var(
-        "WALYTIS_BETA_LOG_PATH",
-        os.path.join(os.getcwd(), "Walytis.log"),
-        override=True,
-    )
+    if os.path.exists("/opt/log"):
+        set_env_var("Brenthy_LOG_DIR", "/opt/log/Brenthy", override=False)
+        set_env_var("WALY_LOG_DIR", "/opt/log", override=False)
     from walytis_beta_tools._experimental.ipfs_interface import ipfs
     import walytis_beta_embedded
     import walytis_beta_api
